@@ -18,17 +18,21 @@ import { RootStackParamList } from '../../types/navigation';
 import Colors from '../../constants/Colors';
 import { useGetTripsQuery, useDeleteTripMutation, useUpdateTripMutation } from '../../store/api/supabaseApi';
 import { showSuccessToast, showErrorToast, showWarningToast } from '../../utils/toastUtils';
+import { useTranslation } from 'react-i18next';
+import { supabase } from '../../lib/supabase';
+import { DbTrip } from '../../store/api/supabaseApi';
 
-type TripDetailsScreenRouteProp = RouteProp<RootStackParamList, 'TripDetails'>;
-type TripDetailsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'TripDetails'>;
+type TripDetailsScreenRouteProp = RouteProp<RootStackParamList, 'TripDetailsScreen'>;
+type TripDetailsScreenNavigationProp = StackNavigationProp<RootStackParamList, 'TripDetailsScreen'>;
 
-type Props = {
+interface Props {
   route: TripDetailsScreenRouteProp;
   navigation: TripDetailsScreenNavigationProp;
-};
+}
 
 const TripDetailsScreen: React.FC<Props> = ({ route, navigation }) => {
   const { tripId } = route.params;
+  const { t } = useTranslation();
   const themeMode = useSelector((state: RootState) => state.theme.mode);
   const [isLoading, setIsLoading] = useState(false);
 

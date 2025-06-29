@@ -26,8 +26,11 @@ const CreateCompanyScreen = () => {
     }
     setLoading(true);
     try {
-      const { error } = await supabase.functions.invoke('create-company-for-user', {
-        body: { companyName: companyName.trim() },
+      // const { error } = await supabase.functions.invoke('create-company-for-user', {
+      //   body: { companyName: companyName.trim() },
+      // });
+      const { error } = await supabase.rpc('create_company_and_assign_admin', {
+        company_name: companyName.trim()
       });
 
       if (error) {

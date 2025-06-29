@@ -191,7 +191,7 @@ export default function TripsScreen() {
   };
 
   const handleTripPress = (tripId: string) => {
-    navigation.navigate('TripDetails', { tripId });
+    navigation.navigate('TripDetailsScreen', { tripId });
   };
 
   const formatDate = (dateString: string) => {

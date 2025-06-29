@@ -27,16 +27,13 @@ interface SettingsItemProps {
 
 export default function SettingsScreen({ navigation }: any) {
   const { t } = useTranslation();
-  const { signOut, user } = useAuth();
+  const { signOut, user, isAdmin } = useAuth();
   const dispatch = useDispatch();
   const currentTheme = useSelector((state: RootState) => state.theme.mode);
   const currentLanguage = useSelector((state: RootState) => state.settings.language);
   const currentUnits = useSelector((state: RootState) => state.settings.units);
   const currentCurrency = useSelector((state: RootState) => state.settings.currency);
 
-  const [canApproveReservations, setCanApproveReservations] = useState(false);
-  const [canAccessFleetManager, setCanAccessFleetManager] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
 
 
@@ -60,39 +57,6 @@ export default function SettingsScreen({ navigation }: any) {
   };
 
   const styles = getStyles(screenColors, currentTheme);
-
-  useEffect(() => {
-    checkPermissions();
-  }, [user]);
-
-  const checkPermissions = async () => {
-    console.log('🔍 === SETTINGS SCREEN DEBUG ===');
-    console.log('📋 User exists:', !!user);
-    console.log('📋 User ID:', user?.id);
-    console.log('📋 User email:', user?.email);
-    console.log('📋 User object:', JSON.stringify(user, null, 2));
-    
-    if (!user?.id) {
-      console.log('❌ No user ID, skipping permission check');
-      console.log('=== END SETTINGS DEBUG ===');
-      return;
-    }
-    
-    console.log('📋 Starting permission checks...');
-    const canApprove = await roleService.canApproveReservations(user.id);
-    const canAccessFM = await roleService.canAccessFleetManager(user.id);
-    const hasAdminAccess = await roleService.hasRole(user.id, 'admin');
-    
-    console.log('📋 Permission results:');
-    console.log('  - canApprove:', canApprove);
-    console.log('  - canAccessFM:', canAccessFM);
-    console.log('  - hasAdminAccess:', hasAdminAccess);
-    console.log('=== END SETTINGS DEBUG ===');
-    
-    setCanApproveReservations(canApprove);
-    setCanAccessFleetManager(canAccessFM);
-    setIsAdmin(hasAdminAccess);
-  };
 
   const handleToggleTheme = () => {
     dispatch(toggleThemeMode());

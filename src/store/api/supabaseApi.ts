@@ -743,7 +743,14 @@ export const supabaseApi = createApi({
           // Ensure company_id is set
           if (!dataToInsert.company_id) {
             console.error('ERROR: No company_id could be determined!');
-            return { error: { status: 'VALIDATION_ERROR', data: 'Company ID is required but could not be determined', originalError: new Error('Missing company_id') } };
+            const validationError: PostgrestError = {
+                name: 'ValidationError',
+                message: 'Company ID is required but could not be determined',
+                details: 'Validation failed internally before database call.',
+                hint: 'Ensure company_id is provided or can be derived from the user session.',
+                code: 'VALIDATION400'
+            };
+            return { error: { status: validationError.code, data: validationError.message, originalError: validationError } };
           }
           
           // Get default vehicle_status_id if not provided
@@ -811,15 +818,16 @@ export const supabaseApi = createApi({
                 }]);
               console.log('System log created for new vehicle');
             }
-          } catch (logError) {
-            console.warn('Failed to create system log for vehicle creation:', logError);
+          } catch (logError: any) {
+            console.warn('Failed to create system log for vehicle creation:', logError.message);
             // Don't fail the vehicle creation if logging fails
           }
 
           return { data: data as DbVehicle };
         } catch (error) {
           console.error('Unexpected error creating vehicle:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: [{ type: 'Vehicles', id: 'LIST' }],
@@ -856,7 +864,8 @@ export const supabaseApi = createApi({
           return { data: data as DbVehicle };
         } catch (error) {
           console.error('Unexpected error updating vehicle:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, { vehicle_id }) => [
@@ -880,7 +889,8 @@ export const supabaseApi = createApi({
           return { data: { success: true } };
         } catch (error) {
           console.error('Unexpected error deleting vehicle:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, vehicle_id) => [
@@ -935,9 +945,9 @@ export const supabaseApi = createApi({
           : [{ type: 'TripPurposes', id: 'LIST' }],
     }),
 
-    getTrips: builder.query<DbTrip[], void>({
-      queryFn: async (_arg, _queryApi, _extraOptions, _baseQuery) => {
-        const { data, error } = await supabase
+    getTrips: builder.query<DbTrip[], { userId?: string } | void>({
+      async queryFn(args) {
+        let query = supabase
           .from('trips')
           .select(`
             *,
@@ -946,6 +956,12 @@ export const supabaseApi = createApi({
             users!trips_user_id_fkey(first_name, last_name, avatar_url)
           `)
           .order('created_at', { ascending: false });
+
+        if (args && 'userId' in args && args.userId) {
+          query = query.eq('user_id', args.userId);
+        }
+
+        const { data, error } = await query;
         
         if (error) {
           console.error('Supabase error fetching trips:', JSON.stringify(error, null, 2));
@@ -1229,7 +1245,8 @@ export const supabaseApi = createApi({
           if (error) throw error;
           return { data: updatedData };
         } catch (error) {
-          return { error: error as SupabaseQueryError };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, { id }) => [{ type: 'Reservations', id }],
@@ -1243,13 +1260,15 @@ export const supabaseApi = createApi({
             .eq('reservation_id', id);
 
           if (error) {
+            console.error('Error deleting reservation:', error);
             return { error: { status: error.code, data: error.message, originalError: error } };
           }
 
           return { data: undefined };
         } catch (error) {
           console.error('Error deleting reservation:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Reservations'],
@@ -1322,7 +1341,8 @@ export const supabaseApi = createApi({
           return { data };
         } catch (error) {
           console.error('❌ Error in approveReservation:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Reservations', { type: 'Reservations', id: 'PENDING' }],
@@ -1404,7 +1424,8 @@ export const supabaseApi = createApi({
           return { data };
         } catch (error) {
           console.error('Error in rejectReservation:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Reservations', { type: 'Reservations', id: 'PENDING' }],
@@ -1467,7 +1488,8 @@ export const supabaseApi = createApi({
           return { data: data || [] };
         } catch (error) {
           console.error('Error in getPendingReservations:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       providesTags: [{ type: 'Reservations', id: 'PENDING' }],
@@ -1503,7 +1525,8 @@ export const supabaseApi = createApi({
           return { data: undefined };
         } catch (error) {
           console.error('Error in createNotification:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Notifications'],
@@ -1526,7 +1549,8 @@ export const supabaseApi = createApi({
           return { data: undefined };
         } catch (error) {
           console.error('Error in deleteTrip:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Trips'],
@@ -1558,7 +1582,8 @@ export const supabaseApi = createApi({
           return { data: data as DbTrip };
         } catch (error) {
           console.error('Error in updateTrip:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Trips'],
@@ -1602,7 +1627,8 @@ export const supabaseApi = createApi({
           return { data: data as DbTrip };
         } catch (error) {
           console.error('Error in createTrip:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Trips'],
@@ -1650,7 +1676,8 @@ export const supabaseApi = createApi({
           return { data: data as DbExpense };
         } catch (error) {
           console.error('Error in createExpense:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Expenses'],
@@ -1683,7 +1710,8 @@ export const supabaseApi = createApi({
           return { data: data as DbExpense };
         } catch (error) {
           console.error('Error in updateExpense:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Expenses'],
@@ -1703,10 +1731,11 @@ export const supabaseApi = createApi({
             throw error;
           }
 
-          return { data: null };
+          return { data: undefined };
         } catch (error) {
           console.error('Error in deleteExpense:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Expenses'],
@@ -1749,7 +1778,8 @@ export const supabaseApi = createApi({
           return { data: data as DbReminder };
         } catch (error) {
           console.error('Error in createReminder:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Reminders'],
@@ -1781,7 +1811,8 @@ export const supabaseApi = createApi({
           return { data: data as DbReminder };
         } catch (error) {
           console.error('Error in updateReminder:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Reminders'],
@@ -1815,7 +1846,8 @@ export const supabaseApi = createApi({
           return { data: data as DbTrip };
         } catch (error) {
           console.error('Error in endTrip:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Trips'],
@@ -1838,7 +1870,8 @@ export const supabaseApi = createApi({
           return { data: data || [] };
         } catch (error) {
           console.error('Unexpected error fetching reservation statuses:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       providesTags: [{ type: 'ReservationStatus', id: 'LIST' }],
@@ -1900,7 +1933,8 @@ export const supabaseApi = createApi({
           return { data: data as DbReservation };
         } catch (error) {
           console.error('Unexpected error creating reservation:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: [{ type: 'Reservations', id: 'LIST' }],
@@ -1958,7 +1992,8 @@ export const supabaseApi = createApi({
           return { data: purposes };
         } catch (error) {
           console.error('Unexpected error fetching purpose options:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       providesTags: [{ type: 'Locations', id: 'PURPOSE_LIST' }],
@@ -2040,7 +2075,8 @@ export const supabaseApi = createApi({
           return { data: locations };
         } catch (error) {
           console.error('Unexpected error fetching location options:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       providesTags: [{ type: 'Locations', id: 'LIST' }],
@@ -2086,7 +2122,8 @@ export const supabaseApi = createApi({
           return { data: data as DbPoi };
         } catch (error) {
           console.error('Unexpected error creating POI:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: [{ type: 'POIs', id: 'LIST' }],
@@ -2110,7 +2147,8 @@ export const supabaseApi = createApi({
           return { data: data as DbPoi };
         } catch (error) {
           console.error('Unexpected error updating POI:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, { poi_id }) => [
@@ -2132,10 +2170,11 @@ export const supabaseApi = createApi({
             return { error: { status: error.code, data: error.message, originalError: error } };
           }
 
-          return { data: null };
+          return { data: undefined };
         } catch (error) {
           console.error('Unexpected error deleting POI:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, poi_id) => [
@@ -2215,7 +2254,8 @@ export const supabaseApi = createApi({
           return { data: data as DbStandardRoute };
         } catch (error) {
           console.error('Unexpected error creating standard route:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: [{ type: 'StandardRoutes', id: 'LIST' }],
@@ -2243,7 +2283,8 @@ export const supabaseApi = createApi({
           return { data: data as DbStandardRoute };
         } catch (error) {
           console.error('Unexpected error updating standard route:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, { route_id }) => [
@@ -2268,7 +2309,8 @@ export const supabaseApi = createApi({
           return { data: undefined };
         } catch (error) {
           console.error('Unexpected error deleting standard route:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, route_id) => [
@@ -2357,7 +2399,8 @@ export const supabaseApi = createApi({
           return { data: data as DbFuelPrice };
         } catch (error) {
           console.error('Unexpected error creating fuel price:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: [{ type: 'FuelPrices', id: 'LIST' }],
@@ -2384,7 +2427,8 @@ export const supabaseApi = createApi({
           return { data: data as DbFuelPrice };
         } catch (error) {
           console.error('Unexpected error updating fuel price:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, { price_id }) => [
@@ -2409,7 +2453,8 @@ export const supabaseApi = createApi({
           return { data: { success: true } };
         } catch (error) {
           console.error('Unexpected error deleting fuel price:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, price_id) => [
@@ -2485,7 +2530,8 @@ export const supabaseApi = createApi({
           return { data };
         } catch (error) {
           console.error('Error creating user:', error);
-          return { error: { status: 'UNKNOWN', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['Users'],
@@ -2727,7 +2773,8 @@ export const supabaseApi = createApi({
           return { data: data as any as DbUser };
         } catch (error) {
           console.error('❌ API: Unexpected error updating user profile:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, { userId }) => [
@@ -2770,7 +2817,8 @@ export const supabaseApi = createApi({
           return { data: data || [] };
         } catch (error) {
           console.error('Unexpected error fetching system logs:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       providesTags: [{ type: 'SystemLogs', id: 'LIST' }],
@@ -2834,7 +2882,8 @@ export const supabaseApi = createApi({
           return { data: data as DbSystemLog };
         } catch (error) {
           console.error('Error in createSystemLog:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['SystemLogs'],
@@ -2872,7 +2921,8 @@ export const supabaseApi = createApi({
           return { data: data as DbSystemLog };
         } catch (error) {
           console.error('Error in resolveSystemLog:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['SystemLogs'],
@@ -2916,17 +2966,18 @@ export const supabaseApi = createApi({
           return { data: stats };
         } catch (error) {
           console.error('Error fetching system log stats:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error as any } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       providesTags: [{ type: 'SystemLogs', id: 'STATS' }],
     }),
 
     // Company Settings API
-    getCompanySettings: builder.query<DbCompany, void>({
-      async queryFn() {
+    getCompanySettings: builder.query<DbCompany | null, string | void>({
+      async queryFn(companyId) {
         try {
-          // Get current user's company_id from users table
+          // If no companyId is provided, try to get it from the logged-in user
           const { data: { user } } = await supabase.auth.getUser();
           if (!user) {
             console.warn('Company Settings: User not authenticated, skipping query');
@@ -2983,10 +3034,12 @@ export const supabaseApi = createApi({
           return { data: data as DbCompany };
         } catch (error: any) {
           console.error('Unexpected error fetching company settings:', error);
-          return { error: { status: 'UNKNOWN', data: 'Unknown error occurred', originalError: error } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      providesTags: [{ type: 'Company', id: 'SETTINGS' }],
+      providesTags: (result) =>
+        result ? [{ type: 'Company', id: result.company_id }] : [{ type: 'Company', id: 'DETAIL' }],
     }),
 
     // Update Company Settings
@@ -3041,7 +3094,8 @@ export const supabaseApi = createApi({
           return { data: data as DbCompany };
         } catch (error: any) {
           console.error('Error in updateCompanySettings:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error } as SupabaseQueryError };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: [{ type: 'Company', id: 'SETTINGS' }],
@@ -3076,7 +3130,8 @@ export const supabaseApi = createApi({
           return { data };
         } catch (error: any) {
           console.error('Error creating expense receipt:', error);
-          return { error: { status: 'UNKNOWN', data: error.message, originalError: error } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: (result, error, arg) => [
@@ -3102,7 +3157,8 @@ export const supabaseApi = createApi({
           return { data: data || [] };
         } catch (error: any) {
           console.error('Error fetching expense receipts:', error);
-          return { error: { status: 'UNKNOWN', data: error.message, originalError: error } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       providesTags: (result, error, expense_id) => [
@@ -3127,7 +3183,8 @@ export const supabaseApi = createApi({
           return { data: { success: true } };
         } catch (error: any) {
           console.error('Error deleting expense receipt:', error);
-          return { error: { status: 'UNKNOWN', data: error.message, originalError: error } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['ExpenseReceipts'],
@@ -3172,7 +3229,8 @@ export const supabaseApi = createApi({
           return { data: transformedData };
         } catch (error: any) {
           console.error('Error fetching user requests:', error);
-          return { error: { status: 'UNKNOWN', data: error.message, originalError: error } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       providesTags: (result) =>
@@ -3215,7 +3273,8 @@ export const supabaseApi = createApi({
           return { data: transformedData };
         } catch (error: any) {
           console.error('Error fetching pending user requests:', error);
-          return { error: { status: 'UNKNOWN', data: error.message, originalError: error } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       providesTags: [{ type: 'UserRequests', id: 'PENDING' }],
@@ -3268,7 +3327,8 @@ export const supabaseApi = createApi({
           return { data: transformedData };
         } catch (error: any) {
           console.error('❌ Error in approveUserRequest:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['UserRequests', { type: 'UserRequests', id: 'PENDING' }],
@@ -3341,7 +3401,8 @@ export const supabaseApi = createApi({
           return { data: transformedData };
         } catch (error: any) {
           console.error('❌ Error in rejectUserRequest:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['UserRequests', { type: 'UserRequests', id: 'PENDING' }],
@@ -3399,7 +3460,8 @@ export const supabaseApi = createApi({
           return { data };
         } catch (error: any) {
           console.error('Error in createUserRequest:', error);
-          return { error: { status: 'ERROR', data: error.message, originalError: error } };
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
       invalidatesTags: ['UserRequests', { type: 'UserRequests', id: 'PENDING' }],

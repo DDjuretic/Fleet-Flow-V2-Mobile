@@ -1,4 +1,5 @@
-import { NavigatorScreenParams } from '@react-navigation/native';
+import type { NavigatorScreenParams, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 
 // Navigation Types for Fleet Flow Next Gen
 export type RootStackParamList = {
@@ -39,10 +40,11 @@ export type RootStackParamList = {
   CompanySettings: undefined;
   SystemLogsAndMonitoring: undefined;
   BackupRestore: undefined;
+  AddExpense: undefined;
 
   
   // Detail Screens (examples, adjust as needed)
-  TripDetails: { tripId: string };
+  TripDetailsScreen: { tripId: string };
   TripMap: { tripId: string; tripName: string };
   Navigation: { tripId: string };
   ExpenseDetails: { expenseId: string };
@@ -100,6 +102,10 @@ export type RootStackParamList = {
   NewAddExpense: undefined;
   AddReminder: undefined;
   EditReminder: { reminderId: string };
+  EditUser: { user: any };
+
+  // Trip stack
+  TripList: undefined;
 };
 
 export type TabParamList = {
@@ -108,6 +114,12 @@ export type TabParamList = {
   Expenses: undefined;
   Reminders: undefined;
   Reservations: undefined;
+  EditUser: { user: any };
+
+  // Trip stack
+  TripList: undefined;
+  TripDetailsScreen: { tripId: string };
+  TripMap: { tripId: string; tripName: string };
 };
 
 export type DrawerParamList = {
@@ -116,4 +128,10 @@ export type DrawerParamList = {
   Settings: undefined;
   HelpSupport: undefined;
   UserProfile: undefined;
-}; 
+};
+
+export type ScreenNavigationProp = StackNavigationProp<RootStackParamList>;
+export type ScreenRouteProp<T extends keyof RootStackParamList> = RouteProp<
+  RootStackParamList,
+  T
+>; 

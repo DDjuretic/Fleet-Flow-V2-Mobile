@@ -111,6 +111,24 @@ ONE PROBLEM = ONE FOCUSED FIX
 4. Tek nakon postavljanja zdravih temelja, nastaviti sa instalacijom ili kodiranjem.
 ```
 
+### **6. Edge Functions vs. RPC for Core Logic**
+
+**Date:** 2024-06-28
+
+**Problem:**
+The initial user registration and company creation flow was unreliable. It depended on a chain of events: a client-side call to an Edge Function (`create-company-for-user`), which in turn depended on a database trigger (`handle_new_user`) to have successfully created a profile in `public.users`. This chain was brittle; the Edge Function was difficult to debug locally (network issues, silent failures), and the trigger was not consistently firing, leading to foreign key violations.
+
+**Solution:**
+The unreliable multi-step process was replaced with a single, robust database **RPC (Remote Procedure Call)** function named `create_company_and_assign_admin`. 
+
+**Key Improvements:**
+1.  **Atomicity:** The entire logic (creating a company, linking the user, assigning the admin role) is now executed within a single database transaction. It either fully succeeds or completely fails, preventing inconsistent states.
+2.  **Self-Contained Logic:** The RPC function was made self-sufficient. It actively checks if a user profile exists in `public.users` and creates one if it's missing, completely bypassing the dependency on the unreliable trigger.
+3.  **Simplified Debugging:** Debugging a SQL function is far more straightforward than debugging network issues between the client, the Supabase gateway, and the Deno environment for Edge Functions.
+
+**Lesson Learned:**
+For critical, transactional business logic (like user onboarding, core data creation), prefer using robust database RPC functions over a distributed chain of client calls, Edge Functions, and database triggers. This centralizes logic, improves reliability, and simplifies debugging. Reserve Edge Functions for asynchronous tasks, webhooks, or logic that genuinely needs to run outside the database.
+
 ---
 
 ## ✅ **PRAVILA ZA BUDUĆNOST**

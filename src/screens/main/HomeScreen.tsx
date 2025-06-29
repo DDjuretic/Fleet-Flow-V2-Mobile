@@ -95,15 +95,16 @@ function HomeScreen({ navigation }: any) {
     isLoading: userProfileLoading, 
     refetch: refetchUserProfile,
     error: userProfileError
-  } = useGetCurrentUserProfileQuery(user?.id || '', {
-    skip: !user?.id,
+  } = useGetCurrentUserProfileQuery(user?.user_id || '', {
+    skip: !user?.user_id,
     // 🚀 Dodajem caching da se ne poziva svaki put
     refetchOnMountOrArgChange: 300 // 5 minuta cache
   });
 
   // PRIORITET 2: Aktivni trip (odmah)
-  const { data: tripsData, isLoading: tripsLoading, refetch: refetchTrips } = useGetTripsQuery(undefined, {
-    refetchOnMountOrArgChange: 60 // 1 minut cache
+  const { data: tripsData, isLoading: tripsLoading, refetch: refetchTrips } = useGetTripsQuery({ userId: user?.user_id }, {
+    refetchOnMountOrArgChange: 60, // 1 minut cache
+    skip: !user?.user_id,
   });
 
   // PRIORITET 3: Notifikacije (odmah - samo broj)
@@ -264,12 +265,12 @@ function HomeScreen({ navigation }: any) {
   
   // 🚀 OPTIMIZACIJA: Memoized user profile
   const userProfile: User = useMemo(() => ({
-    id: user?.id,
-    name: userProfileData?.first_name || user?.user_metadata?.first_name || t('user', 'User'),
-    position: userProfileData?.position || user?.user_metadata?.position || t('employee', 'Employee'),
-    department: userProfileData?.departments?.[0]?.name || user?.user_metadata?.department || t('general', 'General'),
-    avatar: (userProfileData?.avatar_url && userProfileData.avatar_url.trim() !== '') ? userProfileData.avatar_url : undefined,
-  }), [userProfileData, user, t]);
+    id: user?.user_id,
+    name: user?.first_name || t('user', 'User'),
+    position: user?.position || t('employee', 'Employee'),
+    department: user?.branch || t('general', 'General'), // Assuming branch can be used as department
+    avatar: (user?.avatar_url && user.avatar_url.trim() !== '') ? user.avatar_url : undefined,
+  }), [user, t]);
 
   // 🚀 OPTIMIZACIJA: Debug log za avatar - samo u dev modu i kada se promeni
   useEffect(() => {
@@ -417,7 +418,7 @@ function HomeScreen({ navigation }: any) {
             }}
             onViewTrip={(tripId) => {
               updateTripToActive(tripId);
-              navigation.navigate('TripDetails' as never, { tripId });
+              navigation.navigate('TripDetailsScreen' as never, { tripId });
             }}
             onNavigate={(tripId) => {
               console.log('🚗 Navigating to NavigationScreen with tripId:', tripId);

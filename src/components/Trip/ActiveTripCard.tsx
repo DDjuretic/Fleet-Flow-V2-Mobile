@@ -175,9 +175,11 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
     // Prioritize using start location coordinates for weather
     if (startCoords && startCoords[0] !== 42.7087 && startCoords[1] !== 19.3744) {
       console.log('Using start location coordinates for weather:', startCoords);
-      setCurrentLocation({
-        latitude: startCoords[0],
-        longitude: startCoords[1]
+      setCurrentLocation(prev => {
+        if (prev && prev.latitude === startCoords[0] && prev.longitude === startCoords[1]) {
+          return prev;
+        }
+        return { latitude: startCoords[0], longitude: startCoords[1] };
       });
       fetchWeather(startCoords[0], startCoords[1]);
       return;
@@ -189,9 +191,11 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
         console.log("Location permission not granted - using default Podgorica coordinates");
-        setCurrentLocation({
-          latitude: 42.4307,
-          longitude: 19.2478
+        setCurrentLocation(prev => {
+          if (prev && prev.latitude === 42.4307 && prev.longitude === 19.2478) {
+            return prev;
+          }
+          return { latitude: 42.4307, longitude: 19.2478 };
         });
         fetchWeather(42.4307, 19.2478);
         return;
@@ -218,7 +222,12 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
       }
       
       console.log('GPS Location obtained:', coords.latitude, coords.longitude);
-      setCurrentLocation(coords);
+      setCurrentLocation(prev => {
+        if (prev && prev.latitude === coords.latitude && prev.longitude === coords.longitude) {
+          return prev;
+        }
+        return { latitude: coords.latitude, longitude: coords.longitude };
+      });
       
       // Get location name using reverse geocoding
       try {
@@ -247,9 +256,11 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
       console.log("Error getting location:", error);
       
       // Use default Podgorica coordinates
-      setCurrentLocation({
-        latitude: 42.4307,
-        longitude: 19.2478
+      setCurrentLocation(prev => {
+        if (prev && prev.latitude === 42.4307 && prev.longitude === 19.2478) {
+          return prev;
+        }
+        return { latitude: 42.4307, longitude: 19.2478 };
       });
       fetchWeather(42.4307, 19.2478);
     }
@@ -478,8 +489,8 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
 
   // 🚀 OPTIMIZACIJA: Kombinujem weather i location logiku u jedan useEffect
   useEffect(() => {
-    let weatherInterval: ReturnType<typeof setInterval>;
-    let alertInterval: ReturnType<typeof setInterval>;
+    let weatherInterval: ReturnType<typeof setInterval> | null = null;
+    let alertInterval: ReturnType<typeof setInterval> | null = null;
     
     const initializeLocationAndWeather = async () => {
       // Fetch current location initially

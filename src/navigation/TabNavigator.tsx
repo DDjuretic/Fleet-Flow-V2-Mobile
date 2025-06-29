@@ -1,17 +1,20 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 
 // Screens - Updated paths
 import HomeScreen from '../screens/main/HomeScreen';
 import TripsScreen from '../screens/main/TripsScreen';
+import TripDetailsScreen from '../screens/trips/TripDetailsScreen';
+import TripMapScreen from '../screens/trips/TripMapScreen';
 import ExpensesScreen from '../screens/main/ExpensesScreen';
 import RemindersScreen from '../screens/main/RemindersScreen';
 import ReservationsScreen from '../screens/main/ReservationsScreen';
 
 // Types
-import { TabParamList } from '../types/navigation';
+import { TabParamList, RootStackParamList } from '../types/navigation';
 import Colors from '../constants/Colors';
 
 // Redux imports
@@ -19,6 +22,18 @@ import { useSelector } from 'react-redux';
 import { RootState } from '../store/rootReducer';
 
 const Tab = createBottomTabNavigator<TabParamList>();
+const Stack = createStackNavigator<RootStackParamList>();
+
+// Kreiramo StackNavigator za Putovanja
+const TripStackNavigator = () => {
+  return (
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
+      <Stack.Screen name="TripList" component={TripsScreen} />
+      <Stack.Screen name="TripDetailsScreen" component={TripDetailsScreen} />
+      <Stack.Screen name="TripMap" component={TripMapScreen} />
+    </Stack.Navigator>
+  );
+};
 
 const TabNavigator = () => {
   const { t } = useTranslation();
@@ -91,7 +106,7 @@ const TabNavigator = () => {
       />
       <Tab.Screen
         name="Trips"
-        component={TripsScreen}
+        component={TripStackNavigator}
         options={{
           tabBarLabel: t('trips_title', 'Trips'),
         }}

@@ -66,7 +66,7 @@ export default function AddTripScreen({ navigation }: any) {
   const { data: tripTypesData, isLoading: isLoadingTripTypes, error: tripTypesError } = useGetTripTypesQuery();
   const { data: tripPurposesData, isLoading: isLoadingPurposes, error: purposesError } = useGetTripPurposesQuery();
   const { data: standardRoutesData, isLoading: isLoadingRoutes, error: routesError, refetch: refetchRoutes } = useGetStandardRoutesQuery();
-  const { data: userProfile } = useGetCurrentUserProfileQuery(user?.id || '', { skip: !user?.id });
+  const { data: userProfile } = useGetCurrentUserProfileQuery(user?.user_id || '', { skip: !user?.user_id });
   const [createTrip] = useCreateTripMutation();
 
   // Screen colors based on theme
@@ -156,7 +156,7 @@ export default function AddTripScreen({ navigation }: any) {
     if (userProfile?.preferred_vehicle_id && !formData.selectedVehicleId) {
       setFormData(prev => ({
         ...prev,
-        selectedVehicleId: userProfile.preferred_vehicle_id
+        selectedVehicleId: userProfile.preferred_vehicle_id || null
       }));
     }
   }, [userProfile?.preferred_vehicle_id, formData.selectedVehicleId]);
@@ -282,8 +282,6 @@ export default function AddTripScreen({ navigation }: any) {
       const selectedRoute = formData.selectedRouteId ? 
         standardRoutesData?.find(r => r.route_id === formData.selectedRouteId) : null;
 
-
-
       // Debug selected route
       if (selectedRoute) {
         console.log('🗺️ Selected route:', selectedRoute.name);
@@ -292,7 +290,7 @@ export default function AddTripScreen({ navigation }: any) {
       }
 
       const tripData = {
-        user_id: user.id,
+        user_id: user.user_id,
         vehicle_id: formData.selectedVehicleId!,
         trip_type_id: formData.selectedTripTypeId,
         trip_purpose_id: formData.purposeId,

@@ -6,6 +6,8 @@ import { AuthProvider, useAuth } from './src/contexts/AuthContext';
 import Toast from 'react-native-toast-message';
 import toastConfig from './src/utils/toastConfig';
 import './src/i18n'; // Initializes i18n
+import { Provider } from 'react-redux';
+import { store } from './src/store/store';
 
 // Screens
 import LoginScreen from './src/screens/auth/LoginScreen';
@@ -56,14 +58,16 @@ const AppNavigator = () => {
 
 const App = () => {
   return (
-    <Suspense fallback={<View style={styles.container}><ActivityIndicator /></View>}>
-      <NavigationContainer>
-        <AuthProvider>
-          <AppNavigator />
-        </AuthProvider>
-      </NavigationContainer>
-      <Toast config={toastConfig} />
-    </Suspense>
+    <Provider store={store}>
+      <Suspense fallback={<View style={styles.container}><ActivityIndicator /></View>}>
+        <NavigationContainer>
+          <AuthProvider>
+            <AppNavigator />
+          </AuthProvider>
+        </NavigationContainer>
+        <Toast config={toastConfig} />
+      </Suspense>
+    </Provider>
   );
 };
 

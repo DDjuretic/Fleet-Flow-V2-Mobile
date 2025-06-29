@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Database } from '../types/supabase'; // Import the generated types
 import { useTranslation } from 'react-i18next';
 import { showErrorToast } from '../utils/toastUtils';
+import { roleService } from '../services/roleService'; // Import RoleService
 
 // Define the user profile structure using the generated types
 export type UserProfile = Database['public']['Tables']['users']['Row'];
@@ -57,7 +58,9 @@ export const AuthProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
         if (profile) {
           setUser(profile);
           setCompanyId(profile.company_id);
-          console.log(`👤 User profile loaded. Company ID: ${profile.company_id}, Onboarding: ${profile.onboarding_status}`);
+          const isAdminUser = await roleService.hasRole(profile.user_id, 'admin');
+          setIsAdmin(isAdminUser);
+          console.log(`👤 User profile loaded. Company ID: ${profile.company_id}, Onboarding: ${profile.onboarding_status}, Admin: ${isAdminUser}`);
         } else {
           console.log(`👤 No profile found for user ${session.user.id}, might be a new user.`);
           // Create a minimal user object to prevent crashes, app logic will handle redirection.
@@ -114,6 +117,7 @@ export const AuthProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
           };
           setUser(minimalUser);
           setCompanyId(null);
+          setIsAdmin(false);
         }
       } catch (e) {
         console.error("Error in fetchUserProfile:", e);
@@ -124,6 +128,7 @@ export const AuthProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
     } else {
       setUser(null);
       setCompanyId(null);
+      setIsAdmin(false);
       setLoading(false);
     }
   }, []);
