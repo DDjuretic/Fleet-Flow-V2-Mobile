@@ -48,7 +48,7 @@ interface UserData {
 }
 
 const OnboardingFlow: React.FC = () => {
-  const { user, loading, setLoading } = useAuth();
+  const { user, loading, setLoading, refreshUserProfile } = useAuth();
   const navigation = useNavigation<NavigationProp<any>>();
   const { t } = useTranslation();
 
@@ -277,20 +277,22 @@ const OnboardingFlow: React.FC = () => {
           console.error('Error creating vehicle assignment:', assignmentError);
           showWarningToast('Warning', 'Vehicle was created but assignment failed.');
         }
+
+        console.log('✅ [Onboarding] Personal vehicle created successfully:', newVehicle);
       }
 
-      showSuccessToast('Success', 'Your profile has been successfully created!');
+      showSuccessToast(t('common.success'), t('onboarding.onboarding_completed_successfully'));
       
-      // Navigate to Main (TabNavigator) - the AuthContext will handle state updates
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Main' }],
-      });
-    } catch (e) {
-      console.error('❌ [Onboarding] Unexpected error in handleComplete:', e);
-      showErrorToast(t('common.error'), 'An unexpected error occurred during onboarding completion.');
+      // Refresh user profile to get the latest data and trigger navigation
+      await refreshUserProfile();
+      
+    } catch (error: any) {
+      console.error('❌ [Onboarding] A critical error occurred during completion:', error);
+      showErrorToast('Error', 'An unexpected error occurred. Please try again.');
+    } finally {
+      // It's better to let the AuthProvider handle the loading state during profile refresh
     }
-  }, [user, userData, t, goToNextStep]);
+  }, [user, userData, t, refreshUserProfile]);
   
   // Handle photo data update
   const handlePhotoUpdate = (uri: string) => {

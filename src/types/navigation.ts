@@ -118,7 +118,7 @@ export type TabParamList = {
 
   // Trip stack
   TripList: undefined;
-  TripDetailsScreen: { tripId: string };
+  TripDetails: { tripId: string };
   TripMap: { tripId: string; tripName: string };
 };
 

@@ -206,14 +206,13 @@ export default function AddReminderScreen({ navigation }: any) {
     setIsLoading(true);
 
     const reminderData = {
-      user_id: user.id,
+      user_id: user.user_id,
       title: title.trim(),
       description: description.trim() || null,
       due_date: dueDate.toISOString(),
       reminder_type_id: selectedTypeId,
-      vehicle_id: vehicle || null, // TODO: Implement vehicle selection that provides ID
+      vehicle_id: vehicle || null,
       is_system_generated: false,
-      notification_preferences: null, // Can be added later for custom notification settings
       
       // Recurring reminder data
       is_recurring: isRecurring,

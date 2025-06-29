@@ -333,11 +333,20 @@ CREATE TABLE IF NOT EXISTS trips (
 -- =============================================
 CREATE TABLE IF NOT EXISTS reservation_status (
     reservation_status_id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    status_name VARCHAR(50) NOT NULL UNIQUE,
+    status_name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Insert reservation status
+INSERT INTO reservation_status (reservation_status_id, status_name, description) VALUES
+  ('c9171953-bd5f-49bd-b85f-15e4e9ce7bb1', 'PENDING_APPROVAL', 'Waiting for approval'),
+  ('545ad731-755f-42ed-b896-f383fdf48b51', 'APPROVED', 'Reservation approved'),
+  ('33333333-3333-3333-3333-333333333333', 'REJECTED', 'Reservation rejected'),
+  ('44444444-4444-4444-4444-444444444444', 'CANCELLED', 'Reservation cancelled'),
+  ('55555555-5555-5555-5555-555555555555', 'COMPLETED', 'Reservation completed')
+ON CONFLICT (reservation_status_id) DO NOTHING;
 
 -- =============================================
 -- RESERVATIONS TABLE
@@ -876,39 +885,12 @@ ON CONFLICT (trip_type_id) DO NOTHING;
 
 -- Insert trip purposes
 INSERT INTO trip_purposes (trip_purpose_id, name, description, category) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Site Visit', 'Visit to client site', 'business'),
-  ('22222222-2222-2222-2222-222222222222', 'Delivery', 'Package delivery', 'business'),
-  ('33333333-3333-3333-3333-333333333333', 'Meeting', 'Business meeting', 'business'),
-  ('44444444-4444-4444-4444-444444444444', 'Training', 'Employee training', 'business'),
+  ('11111111-1111-1111-1111-111111111111', 'Business Meeting', 'Meeting with clients or partners', 'business'),
+  ('22222222-2222-2222-2222-222222222222', 'Site Visit', 'Visiting a construction site or project location', 'business'),
+  ('33333333-3333-3333-3333-333333333333', 'Delivery', 'Delivering goods to a customer', 'logistics'),
+  ('44444444-4444-4444-4444-444444444444', 'Airport Transfer', 'Transporting someone to or from the airport', 'transport'),
   ('55555555-5555-5555-5555-555555555555', 'Other', 'Other purpose', 'general')
 ON CONFLICT (trip_purpose_id) DO NOTHING;
-
--- Insert reservation status
-INSERT INTO reservation_status (reservation_status_id, status_name, description) VALUES
-  ('c9171953-bd5f-49bd-b85f-15e4e9ce7bb1', 'PENDING_APPROVAL', 'Waiting for approval'),
-  ('545ad731-755f-42ed-b896-f383fdf48b51', 'APPROVED', 'Reservation approved'),
-  ('33333333-3333-3333-3333-333333333333', 'REJECTED', 'Reservation rejected'),
-  ('44444444-4444-4444-4444-444444444444', 'CANCELLED', 'Reservation cancelled'),
-  ('55555555-5555-5555-5555-555555555555', 'COMPLETED', 'Reservation completed')
-ON CONFLICT (reservation_status_id) DO NOTHING;
-
--- Insert expense categories
-INSERT INTO expense_categories (expense_category_id, name, description) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Fuel', 'Fuel expenses'),
-  ('22222222-2222-2222-2222-222222222222', 'Maintenance', 'Vehicle maintenance'),
-  ('33333333-3333-3333-3333-333333333333', 'Insurance', 'Insurance costs'),
-  ('44444444-4444-4444-4444-444444444444', 'Parking', 'Parking fees'),
-  ('55555555-5555-5555-5555-555555555555', 'Tolls', 'Highway tolls'),
-  ('66666666-6666-6666-6666-666666666666', 'Other', 'Other expenses')
-ON CONFLICT (expense_category_id) DO NOTHING;
-
--- Insert reminder types
-INSERT INTO reminder_types (reminder_type_id, name, description, default_lead_time_days) VALUES
-  ('11111111-1111-1111-1111-111111111111', 'Insurance Renewal', 'Vehicle insurance renewal', 30),
-  ('22222222-2222-2222-2222-222222222222', 'Registration Renewal', 'Vehicle registration renewal', 30),
-  ('33333333-3333-3333-3333-333333333333', 'Service Due', 'Vehicle service due', 7),
-  ('44444444-4444-4444-4444-444444444444', 'Inspection Due', 'Vehicle inspection due', 14)
-ON CONFLICT (reminder_type_id) DO NOTHING;
 
 -- Insert sample POIs
 INSERT INTO pois (poi_id, company_id, name, address, latitude, longitude, category) VALUES

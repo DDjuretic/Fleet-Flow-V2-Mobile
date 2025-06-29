@@ -175,7 +175,7 @@ export default function AddReservationScreen({ navigation }: any) {
     }
 
     const reservationData = {
-      user_id: user.id,
+      user_id: user.user_id,
       vehicle_id: selectedVehicleId || undefined,
       vehicle_type_id: selectedVehicleTypeId || undefined,
       start_time: startDate.toISOString(),

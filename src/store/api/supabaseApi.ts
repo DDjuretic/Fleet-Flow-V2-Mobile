@@ -573,13 +573,14 @@ const baseQuery = async <T>(args: {
 
     if (result.error) throw result.error;
     return { data: result.data as T };
-  } catch (error) {
+  } catch (err) {
+    const error = err as PostgrestError;
     return {
       error: {
         status: error.code,
         data: error.message,
-        originalError: error
-      }
+        originalError: error,
+      },
     } as QueryResult<T>;
   }
 };
@@ -3008,7 +3009,14 @@ export const supabaseApi = createApi({
 
             if (defaultError || !defaultCompany) {
               console.error('No company found:', defaultError);
-              return { error: { status: 'NO_COMPANY', data: 'No company configured', originalError: defaultError || new Error('No company found') } };
+              const errorToReturn: PostgrestError = defaultError || {
+                message: 'No company configured in the database.',
+                details: 'The query for a default company returned no results.',
+                hint: 'Ensure at least one company exists in the companies table.',
+                code: 'FF404', // Custom code for Fleet Flow Not Found
+                name: 'NotFoundError'
+              };
+              return { error: { status: errorToReturn.code, data: errorToReturn.message, originalError: errorToReturn } };
             }
 
             // Update user with default company_id
