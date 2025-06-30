@@ -5,16 +5,12 @@ DECLARE
   new_company_id UUID;
   admin_role_id UUID;
   requesting_user_id UUID;
-  requesting_user_email TEXT;
 BEGIN
-  -- Get the ID and email of the user calling this function
+  -- Get the ID of the user calling this function
   requesting_user_id := auth.uid();
-  SELECT u.email INTO requesting_user_email FROM auth.users u WHERE u.id = requesting_user_id;
 
-  -- Ensure user exists in public.users, create if not
-  INSERT INTO public.users (user_id, email)
-  VALUES (requesting_user_id, requesting_user_email)
-  ON CONFLICT (user_id) DO NOTHING;
+  -- The `handle_new_user` trigger is expected to have already created a user
+  -- in `public.users`. This function will now only handle the company logic.
 
   -- 1. Create a new company
   INSERT INTO public.companies (name)
@@ -25,6 +21,11 @@ BEGIN
   UPDATE public.users
   SET company_id = new_company_id
   WHERE user_id = requesting_user_id;
+
+  -- Verify that the user existed and was updated. If not, the trigger failed.
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'User profile not found in public.users for ID %. The handle_new_user trigger may have failed.', requesting_user_id;
+  END IF;
 
   -- 3. Find the 'admin' role_id
   SELECT r.role_id INTO admin_role_id

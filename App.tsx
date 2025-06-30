@@ -31,7 +31,15 @@ import NotificationsScreen from './src/screens/main/NotificationsScreen';
 
 // Admin screens
 import AdminPanelScreen from './src/screens/admin/AdminPanelScreen';
-// ... import all other admin screens ...
+import POIManagementScreen from './src/screens/admin/POIManagementScreen';
+import RouteManagementScreen from './src/screens/admin/RouteManagementScreen';
+import FuelPriceManagementScreen from './src/screens/admin/FuelPriceManagementScreen';
+import UserManagementScreen from './src/screens/admin/UserManagementScreen';
+import VehicleManagementScreen from './src/screens/admin/VehicleManagementScreen';
+import ReportsAnalyticsScreen from './src/screens/admin/ReportsAnalyticsScreen';
+import SystemLogsAndMonitoringScreen from './src/screens/admin/SystemLogsAndMonitoringScreen';
+import BackupRestoreScreen from './src/screens/admin/BackupRestoreScreen';
+import AdminRoleManagementScreen from './src/screens/admin/AdminRoleManagementScreen';
 import PendingReservationsScreen from './src/screens/admin/PendingReservationsScreen';
 import UserRequestsScreen from './src/screens/admin/UserRequestsScreen';
 import CompanySettingsScreen from './src/screens/admin/CompanySettingsScreen';
@@ -131,6 +139,15 @@ const AppNavigator = () => {
                 <Stack.Screen name="EditTrip" component={EditTripScreen} />
                 <Stack.Screen name="UserRequests" component={UserRequestsScreen} />
                 <Stack.Screen name="CompanySettings" component={CompanySettingsScreen} />
+                <Stack.Screen name="POIManagement" component={POIManagementScreen} />
+                <Stack.Screen name="RouteManagement" component={RouteManagementScreen} />
+                <Stack.Screen name="FuelPriceManagement" component={FuelPriceManagementScreen} />
+                <Stack.Screen name="UserManagement" component={UserManagementScreen} />
+                <Stack.Screen name="VehicleManagement" component={VehicleManagementScreen} />
+                <Stack.Screen name="ReportsAnalytics" component={ReportsAnalyticsScreen} />
+                <Stack.Screen name="SystemLogsAndMonitoring" component={SystemLogsAndMonitoringScreen} />
+                <Stack.Screen name="BackupRestore" component={BackupRestoreScreen} />
+                <Stack.Screen name="AdminRoleManagement" component={AdminRoleManagementScreen} />
                 </>
             )
             ) : (

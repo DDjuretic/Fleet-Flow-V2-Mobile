@@ -269,76 +269,62 @@ export default function UserProfileScreen({ navigation }: any) {
   }, [userProfile?.avatar_url]);
 
   const handleSaveProfile = async () => {
-    if (!user?.user_id) {
-      Alert.alert(t('common.error', 'Error'), t('user_not_found', 'User not found'));
-      return;
-    }
-
-    console.log('🔍 Debug: Current user ID:', user.user_id);
-    console.log('🔍 Debug: User profile data:', userProfile);
-    console.log('🔍 Debug: User roles:', userProfile?.user_roles);
-
-    // Check if user has admin privileges for direct update
-    const isAdmin = userProfile?.user_roles?.some(ur => 
-      ur.roles.some(role => role.role_name === 'admin')
-    );
-
-    console.log('🔍 Debug: Is admin?', isAdmin);
+    // For now, let's assume admins can directly update.
+    // A more robust solution would check specific permissions.
+    const isAdmin = (userProfile as any)?.user_roles?.[0]?.roles?.role_name === 'admin';
 
     if (isAdmin) {
-      // Admin can update directly
-      Alert.alert(
-        t('save_changes', 'Save Changes'),
-        t('save_profile_confirmation', 'Are you sure you want to save the profile changes?'),
-        [
-          { text: t('common.cancel', 'Cancel'), style: 'cancel' },
-          { 
-            text: t('common.save', 'Save'), 
-            style: 'default',
-            onPress: () => performDirectUpdate()
-          }
-        ]
-      );
+      await performDirectUpdate();
     } else {
-      // Regular user - create request for approval
-      Alert.alert(
-        t('request_profile_changes', 'Request Profile Changes'),
-        t('profile_changes_need_approval', 'Your profile changes will be submitted for admin approval.'),
-        [
-          { text: t('common.cancel', 'Cancel'), style: 'cancel' },
-          { 
-            text: t('submit_request', 'Submit Request'), 
-            style: 'default',
-            onPress: () => submitProfileChangeRequest()
-          }
-        ]
-      );
+      await submitProfileChangeRequest();
     }
   };
 
   const performDirectUpdate = async () => {
+    if (!user) return;
     try {
-      if (!user?.user_id) throw new Error("User not found for direct update.");
-
-      const updatesObject = {
+      const updates = {
         first_name: profileData.firstName,
         last_name: profileData.lastName,
-        avatar_url: profileData.profileImage,
         phone_number: profileData.phone,
+        alternative_phone: profileData.alternativePhone,
+        date_of_birth: convertDateToISO(profileData.dateOfBirth),
         position: profileData.position,
+        branch: profileData.branch,
+        manager: profileData.manager,
+        work_email: profileData.workEmail,
+        home_address: profileData.homeAddress,
+        home_city: profileData.homeCity,
+        home_postal_code: profileData.homePostalCode,
+        home_country: profileData.homeCountry,
+        work_address: profileData.workAddress,
+        work_city: profileData.workCity,
+        work_postal_code: profileData.workPostalCode,
+        work_country: profileData.workCountry,
+        emergency_contact_name: profileData.emergencyContactName,
+        emergency_contact_phone: profileData.emergencyContactPhone,
+        emergency_contact_relationship: profileData.emergencyContactRelationship,
+        has_private_vehicle: profileData.hasPrivateVehicle,
+        private_vehicle_plate: profileData.privateVehiclePlate,
+        private_vehicle_make: profileData.privateVehicleMake,
+        private_vehicle_model: profileData.privateVehicleModel,
+        driving_license_number: profileData.drivingLicenseNumber,
+        driving_license_category: profileData.drivingLicenseCategory,
+        driving_license_expiry: convertDateToISO(profileData.drivingLicenseExpiry),
+        biography: profileData.biography,
+        skills: convertArrayToString(profileData.skills),
+        languages: convertArrayToString(profileData.languages),
+        certifications: convertArrayToString(profileData.certifications),
       };
+
+      await updateProfile({ userId: user.user_id, updates }).unwrap();
       
-      await updateProfile({
-        userId: user.user_id,
-        updates: updatesObject
-      }).unwrap();
-
-      showSuccessToast(t('common.success'), t('profile_updated_successfully'));
+      showSuccessToast(t('profile_updated_successfully'));
+      setIsEditing(false);
       refetchProfile();
-
     } catch (error) {
-      console.error('Error performing direct update:', error);
-      showErrorToast(t('common.error'), t('profile_update_failed') + ` ${(error as Error).message}`);
+      console.error('Failed to update profile:', error);
+      showErrorToast(t('failed_to_update_profile'));
     }
   };
 

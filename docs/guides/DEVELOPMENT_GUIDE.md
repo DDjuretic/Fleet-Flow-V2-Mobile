@@ -89,4 +89,12 @@ The project is a monorepo with a clear separation between the mobile app, web ap
 ## 6. Testing Strategy (To be expanded)
 - **Unit Tests:** Jest is configured. Focus on testing utility functions, Redux reducers, and complex business logic.
 - **Component Tests:** Use React Native Testing Library to test component rendering and user interactions.
-- **E2E Tests:** (To be defined) Consider Maestro for end-to-end testing user flows. 
+- **E2E Tests:** (To be defined) Consider Maestro for end-to-end testing user flows.
+
+Okay, the database has been successfully reset. All the migrations, including our fix, have been applied.
+
+Please try the registration and company creation process again. The original error should now be resolved. If a new error appears, it should provide a clearer message about the root cause. Let me know how it goes!
+Srpski:
+U redu, baza podataka je uspešno resetovana. Sve migracije, uključujući i našu ispravku, su primenjene.
+
+Molim vas, pokušajte ponovo sa procesom registracije i kreiranja kompanije. Originalna greška bi sada trebalo da bude rešena. Ako se pojavi nova greška, trebalo bi da pruži jasniju poruku o osnovnom uzroku. Javite mi kako je prošlo! 

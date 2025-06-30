@@ -28,7 +28,7 @@ import {
   useDeleteUserMutation,
   DbUser,
 } from '../../store/api/supabaseApi';
-import { useToast } from "react-native-toast-notifications";
+import { showErrorToast, showSuccessToast, showWarningToast } from '../../utils/toastUtils';
 
 interface UserFormData {
   username: string;
@@ -49,9 +49,8 @@ interface UserFormData {
 
 const UserManagementScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
   const { t } = useTranslation();
-  const toast = useToast();
   const themeMode = useSelector((state: RootState) => state.theme.mode);
-  const authUser = useSelector((state: RootState) => state.auth.user);
+  const authUser = useSelector((state: RootState) => state.auth?.user || null);
   
   const screenColors = themeMode === 'dark' ? {
     background: Colors.DARK.background,
@@ -150,18 +149,18 @@ const UserManagementScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
   const handleSave = async () => {
     // Validation
     if (!formData.username || !formData.email || !formData.first_name || !formData.last_name) {
-      toast.show(t('fill_required_fields_user', 'Please fill in all required fields (username, email, first name, last name)'), { type: 'danger' });
+      showWarningToast(t('fill_required_fields_user', 'Please fill in all required fields (username, email, first name, last name)'));
       return;
     }
 
     // Additional validation for new users
     if (!editingUser) {
       if (!formData.password || formData.password.length < 6) {
-        toast.show(t('password_min_length', 'Password must be at least 6 characters long.'), { type: 'danger' });
+        showWarningToast(t('password_min_length', 'Password must be at least 6 characters long.'));
         return;
       }
       if (formData.password !== formData.confirmPassword) {
-        toast.show(t('passwords_do_not_match', 'Passwords do not match.'), { type: 'danger' });
+        showWarningToast(t('passwords_do_not_match', 'Passwords do not match.'));
         return;
       }
     }
@@ -185,18 +184,18 @@ const UserManagementScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           preferred_currency: formData.preferred_currency,
         }).unwrap();
         
-        toast.show(t('user_updated_successfully', 'User updated successfully'), { type: 'success' });
+        showSuccessToast(t('user_updated_successfully', 'User updated successfully'));
         setShowEditModal(false);
       } else {
         // Create user
-        toast.show("User creation is temporarily disabled.", { type: 'warning' });
+        showWarningToast("User creation is temporarily disabled.");
         return;
       }
       
       resetForm();
     } catch (error: any) {
       const errorMessage = error?.data?.error_description || error?.data?.message || t('failed_save_user', 'Failed to save user');
-      toast.show(errorMessage, { type: 'danger' });
+      showErrorToast(errorMessage);
       console.error('Error saving user:', error);
     }
   };
@@ -213,10 +212,10 @@ const UserManagementScreen: React.FC<{ navigation: any }> = ({ navigation }) => 
           onPress: async () => {
             try {
               await deleteUser(user.user_id).unwrap();
-              toast.show(t('user_deleted_successfully', 'User deleted successfully'), { type: 'success' });
+              showSuccessToast(t('user_deleted_successfully', 'User deleted successfully'));
             } catch (error: any) {
               const errorMessage = error?.data?.error_description || error?.data?.message || t('failed_delete_user', 'Failed to delete user');
-              toast.show(errorMessage, { type: 'danger' });
+              showErrorToast(errorMessage);
               console.error('Error deleting user:', error);
             }
           },
