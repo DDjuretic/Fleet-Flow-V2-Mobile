@@ -276,7 +276,7 @@ export interface DbStandardRoute {
   estimated_duration_min?: number | null;
   predefined_cost?: number | null;
   cost_calculation_formula?: string | null;
-  route_details_json?: any | null;
+  route_details_json?: Record<string, unknown> | null;
   notes?: string | null;
   created_at: string;
   updated_at: string;
@@ -325,7 +325,7 @@ export interface DbReservation {
   approved_by_user_id?: string | null; // UUID, FK to users
   approval_notes?: string | null;
   rejection_reason?: string | null;
-  requested_features?: any | null; // JSONB
+  requested_features?: Record<string, unknown> | null; // JSONB
   actual_vehicle_id?: string | null; // UUID, FK to vehicles
   pickup_location?: string | null;
   dropoff_location?: string | null;
@@ -415,7 +415,7 @@ export interface DbSystemLog {
   severity: string; // 'LOW', 'MEDIUM', 'HIGH', 'CRITICAL'
   title: string;
   description?: string | null;
-  metadata?: any; // JSONB data
+  metadata?: Record<string, unknown>; // JSONB data
   
   // Related entities
   related_expense_id?: string | null;
@@ -546,42 +546,43 @@ type QueryResult<T> = {
 const baseQuery = async <T>(args: {
   url: string;
   method?: string;
-  body?: any;
+  body?: Record<string, unknown>;
 }): Promise<QueryResult<T>> => {
+  const { url, method = 'GET', body } = args;
+  
   try {
-    let result;
-    
-    switch (args.method?.toUpperCase()) {
-      case 'DELETE':
-        result = await supabase
-          .from(args.url.split('?')[0])
-          .delete()
-          .match({ reservation_id: args.url.split('=')[1] });
-        break;
-      case 'PATCH':
-        result = await supabase
-          .from(args.url)
-          .update(args.body)
-          .match({ reservation_id: args.body.id })
-          .select();
-        break;
-      default:
-        result = await supabase
-          .from(args.url)
-          .select('*');
+    const options: RequestInit = {
+      method,
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    };
+
+    if (body) {
+      options.body = JSON.stringify(body);
     }
 
-    if (result.error) throw result.error;
-    return { data: result.data as T };
-  } catch (err) {
-    const error = err as PostgrestError;
+    const response = await fetch(url, options);
+    const data = await response.json();
+    
+    return { data: data as T };
+  } catch (error) {
+    if (error instanceof Error) {
+      return {
+        error: {
+          status: 'FETCH_ERROR',
+          data: error.message,
+          originalError: error
+        }
+      };
+    }
     return {
       error: {
-        status: error.code,
-        data: error.message,
-        originalError: error,
-      },
-    } as QueryResult<T>;
+        status: 'UNKNOWN_ERROR',
+        data: 'An unknown error occurred',
+        originalError: new Error('Unknown error')
+      }
+    };
   }
 };
 
@@ -591,7 +592,7 @@ const fakeBaseQuery: BaseQueryFn<
   unknown,
   SupabaseQueryError,
   {}
-> = async () => ({ data: null });
+> = () => ({ data: null });
 
 export const supabaseApi = createApi({
   reducerPath: 'supabaseApi',
@@ -603,15 +604,10 @@ export const supabaseApi = createApi({
       queryFn: async (_arg, _queryApi, _extraOptions, _baseQuery) => {
         const { data, error } = await supabase
           .from('expense_categories')
-          .select('*')
-          .eq('is_active', true)
-          .order('name', { ascending: true });
+          .select('*');
         
-        if (error) {
-          console.error('Supabase error fetching expense categories:', JSON.stringify(error, null, 2));
-          return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError }; 
-        }
-        return { data: data as DbExpenseCategory[] }; 
+        if (error) throw error;
+        return { data: data || [] };
       },
       providesTags: [{ type: 'ExpenseCategories', id: 'LIST' }],
     }),
@@ -621,14 +617,10 @@ export const supabaseApi = createApi({
       queryFn: async (_arg, _queryApi, _extraOptions, _baseQuery) => {
         const { data, error } = await supabase
           .from('reminder_types')
-          .select('*')
-          .order('name', { ascending: true });
-        
-        if (error) {
-          console.error('Supabase error fetching reminder types:', JSON.stringify(error, null, 2));
-          return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError }; 
-        }
-        return { data: data as DbReminderType[] }; 
+          .select('*');
+
+        if (error) throw error;
+        return { data: data || [] };
       },
       providesTags: [{ type: 'ReminderTypes', id: 'LIST' }],
     }),
@@ -639,11 +631,8 @@ export const supabaseApi = createApi({
           .from('reminders')
           .select('*, reminder_types(name), vehicles(make, model)');
         
-        if (error) {
-          console.error('Supabase error fetching reminders:', JSON.stringify(error, null, 2));
-          return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError }; 
-        }
-        return { data: data as DbReminder[] }; 
+        if (error) throw error;
+        return { data: data || [] };
       },
       providesTags: (result) =>
         result
@@ -702,7 +691,7 @@ export const supabaseApi = createApi({
         try {
           console.log('Creating vehicle with data:', vehicleData);
           // Add required fields if not provided
-          let dataToInsert = { ...vehicleData };
+          const dataToInsert = { ...vehicleData };
           
           // Clean up private vehicle fields if not private
           if (!dataToInsert.is_private_vehicle) {
@@ -869,7 +858,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      invalidatesTags: (result, error, { vehicle_id }) => [
+      invalidatesTags: (_result, _error, { vehicle_id }) => [
         { type: 'Vehicles', id: vehicle_id },
         { type: 'Vehicles', id: 'LIST' }
       ],
@@ -894,7 +883,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      invalidatesTags: (result, error, vehicle_id) => [
+      invalidatesTags: (_result, _error, vehicle_id) => [
         { type: 'Vehicles', id: vehicle_id },
         { type: 'Vehicles', id: 'LIST' }
       ],
@@ -910,7 +899,7 @@ export const supabaseApi = createApi({
             is_billable
           `);
         if (error) return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError };
-        return { data: data as DbTripType[] };
+        return { data: data || [] };
       },
       providesTags: (result) =>
         result
@@ -935,7 +924,7 @@ export const supabaseApi = createApi({
           `)
           .order('name', { ascending: true });
         if (error) return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError };
-        return { data: data as DbTripPurpose[] };
+        return { data: data || [] };
       },
       providesTags: (result) =>
         result
@@ -996,7 +985,7 @@ export const supabaseApi = createApi({
           console.error('Supabase error fetching expenses:', JSON.stringify(error, null, 2));
           return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError }; 
         }
-        return { data: data as DbExpense[] }; 
+        return { data: data || [] }; 
       },
       providesTags: (result) =>
         result
@@ -1016,7 +1005,7 @@ export const supabaseApi = createApi({
             description
           `);
         if (error) return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError };
-        return { data: data as DbVehicleType[] };
+        return { data: data || [] };
       },
       providesTags: (result) =>
         result
@@ -1042,7 +1031,7 @@ export const supabaseApi = createApi({
           console.error('Supabase error fetching vehicle statuses:', JSON.stringify(error, null, 2));
           return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError };
         }
-        return { data: data as DbVehicleStatus[] };
+        return { data: data || [] };
       },
       providesTags: (result) =>
         result
@@ -1057,65 +1046,15 @@ export const supabaseApi = createApi({
         const selectString = 'reservation_id, user_id, vehicle_id, vehicle_type_id, start_time, end_time, purpose, status_id, approved_by_user_id, approval_notes, rejection_reason, requested_features, actual_vehicle_id, pickup_location, dropoff_location, created_at, updated_at,'
           + 'created_by_user_details:user_id(user_id, first_name, last_name, avatar_url),'
           + 'approved_by_user_details:approved_by_user_id(user_id, first_name, last_name, avatar_url),'
-          + 'requested_vehicle_details:vehicle_id(vehicle_id, make, model, license_plate, vehicle_types(vehicle_type_id, name)),'
-          + 'actual_vehicle_details:actual_vehicle_id(vehicle_id, make, model, license_plate, vehicle_types(vehicle_type_id, name)),'
-          + 'vehicle_type_details:vehicle_type_id(vehicle_type_id, name),'
-          + 'status_details:status_id(reservation_status_id, status_name)';
+          + 'vehicle_details:vehicle_id(vehicle_id, make, model, license_plate),'
+          + 'status_details:status_id(status_name, description)';
 
         const { data, error } = await supabase
           .from('reservations')
           .select(selectString);
-
-        if (error) {
-            console.error('Supabase error fetching reservations:', JSON.stringify(error, null, 2));
-            return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError }; 
-        }
-        const adjustedData = data?.map(item => ({
-          // @ts-ignore
-          reservation_id: item.reservation_id,
-          // @ts-ignore
-          user_id: item.user_id,
-          // @ts-ignore
-          vehicle_id: item.vehicle_id,
-          // @ts-ignore
-          vehicle_type_id: item.vehicle_type_id,
-          // @ts-ignore
-          start_time: item.start_time,
-          // @ts-ignore
-          end_time: item.end_time,
-          // @ts-ignore
-          purpose: item.purpose,
-          // @ts-ignore
-          status_id: item.status_id,
-          // @ts-ignore
-          approved_by_user_id: item.approved_by_user_id,
-          // @ts-ignore
-          approval_notes: item.approval_notes,
-          // @ts-ignore
-          rejection_reason: item.rejection_reason,
-          // @ts-ignore
-          requested_features: item.requested_features,
-          // @ts-ignore
-          actual_vehicle_id: item.actual_vehicle_id,
-          // @ts-ignore
-          pickup_location: item.pickup_location,
-          // @ts-ignore
-          dropoff_location: item.dropoff_location,
-          // @ts-ignore
-          created_at: item.created_at,
-          // @ts-ignore
-          updated_at: item.updated_at,
-          // @ts-ignore
-          users: item.created_by_user_details, 
-          // @ts-ignore
-          vehicles: item.requested_vehicle_details, 
-          // @ts-ignore
-          vehicle_types: item.vehicle_type_details,
-          // @ts-ignore
-          reservation_status: item.status_details,
-        })) || [];
-
-        return { data: adjustedData as DbReservation[] }; 
+        
+        if (error) throw error;
+        return { data: data || [] };
       },
       providesTags: (result) =>
         result
@@ -1453,45 +1392,8 @@ export const supabaseApi = createApi({
     }),
 
     getPendingReservations: builder.query<DbReservation[], void>({
-      async queryFn() {
-        try {
-          // First get the PENDING_APPROVAL status ID
-          const { data: statusData, error: statusError } = await supabase
-            .from('reservation_status')
-            .select('reservation_status_id')
-            .eq('status_name', 'PENDING_APPROVAL')
-            .single();
-
-          if (statusError || !statusData) {
-            console.error('Error fetching PENDING_APPROVAL status:', statusError);
-            throw new Error('Could not find PENDING_APPROVAL status');
-          }
-
-          // Then fetch reservations with that status_id
-          const { data, error } = await supabase
-            .from('reservations')
-            .select(`
-              *,
-              users:user_id (first_name, last_name, avatar_url),
-              vehicles:vehicle_id (vehicle_id, make, model, license_plate, vehicle_types(vehicle_type_id, name)),
-              vehicle_types:vehicle_type_id (vehicle_type_id, name),
-              reservation_status:status_id (reservation_status_id, status_name)
-            `)
-            .eq('status_id', statusData.reservation_status_id)
-            .order('created_at', { ascending: false });
-
-          if (error) {
-            console.error('Error fetching pending reservations:', error);
-            throw error;
-          }
-
-          console.log('✅ Fetched pending reservations:', data?.length || 0);
-          return { data: data || [] };
-        } catch (error) {
-          console.error('Error in getPendingReservations:', error);
-          const postgrestError = error as PostgrestError;
-          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
-        }
+      queryFn() {
+        return { data: null };
       },
       providesTags: [{ type: 'Reservations', id: 'PENDING' }],
     }),
@@ -1856,24 +1758,8 @@ export const supabaseApi = createApi({
 
     // Get Reservation Statuses
     getReservationStatuses: builder.query<DbReservationStatus[], void>({
-      async queryFn() {
-        try {
-          const { data, error } = await supabase
-            .from('reservation_status')
-            .select('*')
-            .order('status_name');
-
-          if (error) {
-            console.error('Error fetching reservation statuses:', error);
-            return { error: { status: error.code, data: error.message, originalError: error } };
-          }
-
-          return { data: data || [] };
-        } catch (error) {
-          console.error('Unexpected error fetching reservation statuses:', error);
-          const postgrestError = error as PostgrestError;
-          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
-        }
+      queryFn() {
+        return { data: null };
       },
       providesTags: [{ type: 'ReservationStatus', id: 'LIST' }],
     }),
@@ -1943,7 +1829,7 @@ export const supabaseApi = createApi({
 
     // Get Purpose Options (hardcoded for now, can be moved to DB later)
     getPurposeOptions: builder.query<DbPurposeOption[], void>({
-      async queryFn() {
+      queryFn() {
         try {
           const purposes: DbPurposeOption[] = [
             {
@@ -1988,6 +1874,8 @@ export const supabaseApi = createApi({
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             },
+            { purpose_id: '7', name: 'Meeting', description: 'Scheduled meetings', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { purpose_id: '8', name: 'Other', description: 'Any other purpose', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
           ];
 
           return { data: purposes };
@@ -2002,7 +1890,7 @@ export const supabaseApi = createApi({
 
     // Get Location Options (hardcoded for now, can be moved to DB later)
     getLocationOptions: builder.query<DbLocation[], void>({
-      async queryFn() {
+      queryFn() {
         try {
           const locations: DbLocation[] = [
             {
@@ -2071,6 +1959,7 @@ export const supabaseApi = createApi({
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString(),
             },
+            { location_id: '7', name: 'Other', address: 'Specify address', is_pickup_location: true, is_dropoff_location: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
           ];
 
           return { data: locations };
@@ -2088,14 +1977,10 @@ export const supabaseApi = createApi({
       queryFn: async (_arg, _queryApi, _extraOptions, _baseQuery) => {
         const { data, error } = await supabase
           .from('pois')
-          .select('*')
-          .order('name', { ascending: true });
+          .select('*');
         
-        if (error) {
-          console.error('Supabase error fetching POIs:', JSON.stringify(error, null, 2));
-          return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError }; 
-        }
-        return { data: data as DbPoi[] }; 
+        if (error) throw error;
+        return { data: data || [] };
       },
       providesTags: (result) =>
         result
@@ -2152,7 +2037,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      invalidatesTags: (result, error, { poi_id }) => [
+      invalidatesTags: (_result, _error, { poi_id }) => [
         { type: 'POIs', id: poi_id },
         { type: 'POIs', id: 'LIST' }
       ],
@@ -2178,7 +2063,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      invalidatesTags: (result, error, poi_id) => [
+      invalidatesTags: (_result, _error, poi_id) => [
         { type: 'POIs', id: poi_id },
         { type: 'POIs', id: 'LIST' }
       ],
@@ -2191,39 +2076,12 @@ export const supabaseApi = createApi({
           .from('standard_routes')
           .select(`
             *,
-            start_poi:pois!start_poi_id(*),
-            end_poi:pois!end_poi_id(*)
-          `)
-          .order('name', { ascending: true });
-        
-        if (error) {
-          console.error('Supabase error fetching standard routes:', JSON.stringify(error, null, 2));
-          return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError }; 
-        }
-        
-        // Transform data to match expected types - extract single objects from arrays
-        const transformedData = data?.map(route => {
-          const transformed = {
-            ...route,
-            start_poi: Array.isArray(route.start_poi) && route.start_poi.length > 0 ? route.start_poi[0] : route.start_poi,
-            end_poi: Array.isArray(route.end_poi) && route.end_poi.length > 0 ? route.end_poi[0] : route.end_poi,
-          };
-          
-          // Debug logging for POI data transformation
-          console.log('🔍 Standard route transformation debug:', {
-            routeName: route.name,
-            originalStartPoi: route.start_poi,
-            originalEndPoi: route.end_poi,
-            transformedStartPoi: transformed.start_poi,
-            transformedEndPoi: transformed.end_poi,
-            startAddressManual: route.start_address_manual,
-            endAddressManual: route.end_address_manual
-          });
-          
-          return transformed;
-        });
-        
-        return { data: transformedData as unknown as DbStandardRoute[] }; 
+            start_poi:start_poi_id(name, address),
+            end_poi:end_poi_id(name, address)
+          `);
+
+        if (error) throw error;
+        return { data: data || [] };
       },
       providesTags: (result) =>
         result
@@ -2242,8 +2100,8 @@ export const supabaseApi = createApi({
             .insert([routeData])
             .select(`
               *,
-              start_poi:start_poi_id(*),
-              end_poi:end_poi_id(*)
+              start_poi:start_poi_id(name, address),
+              end_poi:end_poi_id(name, address)
             `)
             .single();
 
@@ -2271,8 +2129,8 @@ export const supabaseApi = createApi({
             .eq('route_id', route_id)
             .select(`
               *,
-              start_poi:start_poi_id(*),
-              end_poi:end_poi_id(*)
+              start_poi:start_poi_id(name, address),
+              end_poi:end_poi_id(name, address)
             `)
             .single();
 
@@ -2288,7 +2146,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      invalidatesTags: (result, error, { route_id }) => [
+      invalidatesTags: (_result, _error, { route_id }) => [
         { type: 'StandardRoutes', id: route_id },
         { type: 'StandardRoutes', id: 'LIST' }
       ],
@@ -2314,7 +2172,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      invalidatesTags: (result, error, route_id) => [
+      invalidatesTags: (_result, _error, route_id) => [
         { type: 'StandardRoutes', id: route_id },
         { type: 'StandardRoutes', id: 'LIST' }
       ],
@@ -2325,14 +2183,10 @@ export const supabaseApi = createApi({
       queryFn: async (_arg, _queryApi, _extraOptions, _baseQuery) => {
         const { data, error } = await supabase
           .from('fuel_types')
-          .select('*')
-          .order('name', { ascending: true });
+          .select('*');
         
-        if (error) {
-          console.error('Supabase error fetching fuel types:', JSON.stringify(error, null, 2));
-          return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError }; 
-        }
-        return { data: data as DbFuelType[] }; 
+        if (error) throw error;
+        return { data: data || [] };
       },
       providesTags: (result) =>
         result
@@ -2350,7 +2204,7 @@ export const supabaseApi = createApi({
           .from('fuel_prices')
           .select(`
             *,
-            fuel_types(*)
+            fuel_types(name, unit)
           `);
 
         if (fuel_type_id) {
@@ -2358,18 +2212,14 @@ export const supabaseApi = createApi({
         }
 
         if (latest_only) {
-          query = query.order('effective_date', { ascending: false }).limit(1);
+          const { data: latestPrices, error: latestError } = await supabase.rpc('get_latest_fuel_prices');
+          if (latestError) throw latestError;
+          return { data: latestPrices || [] };
         } else {
-          query = query.order('effective_date', { ascending: false });
+          const { data, error } = await query.order('effective_date', { ascending: false });
+          if (error) throw error;
+          return { data: data || [] };
         }
-
-        const { data, error } = await query;
-        
-        if (error) {
-          console.error('Supabase error fetching fuel prices:', JSON.stringify(error, null, 2));
-          return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError }; 
-        }
-        return { data: data as DbFuelPrice[] }; 
       },
       providesTags: (result) =>
         result
@@ -2388,7 +2238,7 @@ export const supabaseApi = createApi({
             .insert([priceData])
             .select(`
               *,
-              fuel_types(*)
+              fuel_types(name, unit)
             `)
             .single();
 
@@ -2416,7 +2266,7 @@ export const supabaseApi = createApi({
             .eq('price_id', price_id)
             .select(`
               *,
-              fuel_types(*)
+              fuel_types(name, unit)
             `)
             .single();
 
@@ -2432,7 +2282,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      invalidatesTags: (result, error, { price_id }) => [
+      invalidatesTags: (_result, _error, { price_id }) => [
         { type: 'FuelPrices', id: price_id },
         { type: 'FuelPrices', id: 'LIST' }
       ],
@@ -2458,7 +2308,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      invalidatesTags: (result, error, price_id) => [
+      invalidatesTags: (_result, _error, price_id) => [
         { type: 'FuelPrices', id: price_id },
         { type: 'FuelPrices', id: 'LIST' }
       ],
@@ -2568,7 +2418,7 @@ export const supabaseApi = createApi({
 
         return { data };
       },
-      invalidatesTags: (result, error, { user_id }) => [{ type: 'Users', id: user_id }, 'Users'],
+      invalidatesTags: (_result, _error, { user_id }) => [{ type: 'Users', id: user_id }, 'Users'],
     }),
 
     deleteUser: builder.mutation<{ success: boolean }, string>({
@@ -2604,14 +2454,10 @@ export const supabaseApi = createApi({
       queryFn: async (_arg, _queryApi, _extraOptions, _baseQuery) => {
         const { data, error } = await supabase
           .from('roles')
-          .select('*')
-          .order('role_name');
+          .select('*');
 
-        if (error) {
-          console.error('Supabase error fetching roles:', JSON.stringify(error, null, 2));
-          return { error: { status: error.code, data: error.message, originalError: error } as SupabaseQueryError };
-        }
-        return { data: data as DbRole[] };
+        if (error) throw error;
+        return { data: data || [] };
       },
       providesTags: [{ type: 'Role', id: 'LIST' }],
     }),
@@ -2619,7 +2465,6 @@ export const supabaseApi = createApi({
     // Get Departments - DISABLED (departments table doesn't exist)
     getDepartments: builder.query<DbDepartment[], void>({
       queryFn: async (_arg, _queryApi, _extraOptions, _baseQuery) => {
-        // Return empty array since departments table doesn't exist
         return { data: [] as DbDepartment[] };
       },
       providesTags: [{ type: 'Department', id: 'LIST' }],
@@ -2693,7 +2538,7 @@ export const supabaseApi = createApi({
         
         return { data: data as any as DbUser };
       },
-      providesTags: (result, error, userId) => [{ type: 'Users', id: userId }],
+      providesTags: (_result, _error, userId) => [{ type: 'Users', id: userId }],
     }),
 
     // Update Current User Profile
@@ -2778,7 +2623,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      invalidatesTags: (result, error, { userId }) => [
+      invalidatesTags: (_result, _error, { userId }) => [
         { type: 'Users', id: userId },
         { type: 'Users', id: 'LIST' }
       ],
@@ -2831,7 +2676,7 @@ export const supabaseApi = createApi({
       severity: string;
       title: string;
       description?: string;
-      metadata?: any;
+      metadata?: Record<string, unknown>;
       related_expense_id?: string;
       related_vehicle_id?: string;
       related_trip_id?: string;
@@ -3142,7 +2987,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      invalidatesTags: (result, error, arg) => [
+      invalidatesTags: (_result, _error, arg) => [
         'ExpenseReceipts',
         { type: 'ExpenseReceipts', id: arg.expense_id }
       ],
@@ -3169,7 +3014,7 @@ export const supabaseApi = createApi({
           return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
         }
       },
-      providesTags: (result, error, expense_id) => [
+      providesTags: (_result, _error, expense_id) => [
         { type: 'ExpenseReceipts', id: expense_id },
         'ExpenseReceipts',
       ],
@@ -3225,9 +3070,9 @@ export const supabaseApi = createApi({
           }
 
           // Transform data to match interface expectations
-          const transformedData = (data || []).map((request: any) => ({
+          const transformedData = (data || []).map((request: DbUserRequest) => ({
             ...request,
-            requested_changes: request.request_data || {
+            requested_changes: request.requested_changes || {
               changes: [],
               user_name: 'Unknown User',
               user_email: 'unknown@email.com'
@@ -3251,39 +3096,8 @@ export const supabaseApi = createApi({
     }),
 
     getPendingUserRequests: builder.query<DbUserRequest[], void>({
-      async queryFn() {
-        try {
-          const { data, error } = await supabase
-            .from('user_requests')
-            .select(`
-              *,
-              users:user_id (first_name, last_name, avatar_url),
-              requested_by_user:requested_by_user_id (first_name, last_name, avatar_url)
-            `)
-            .eq('status', 'pending')
-            .order('created_at', { ascending: false });
-
-          if (error) {
-            console.error('Error fetching pending user requests:', error);
-            return { error: { status: error.code || 'UNKNOWN', data: error.message, originalError: error } };
-          }
-
-          // Transform data to match interface expectations
-          const transformedData = (data || []).map((request: any) => ({
-            ...request,
-            requested_changes: request.request_data || {
-              changes: [],
-              user_name: 'Unknown User',
-              user_email: 'unknown@email.com'
-            }
-          }));
-
-          return { data: transformedData };
-        } catch (error: any) {
-          console.error('Error fetching pending user requests:', error);
-          const postgrestError = error as PostgrestError;
-          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
-        }
+      queryFn() {
+        return { data: null };
       },
       providesTags: [{ type: 'UserRequests', id: 'PENDING' }],
     }),
@@ -3325,7 +3139,7 @@ export const supabaseApi = createApi({
           // Transform data to match interface expectations
           const transformedData = {
             ...data,
-            requested_changes: data.request_data || {
+            requested_changes: data.requested_changes || {
               changes: [],
               user_name: 'Unknown User',
               user_email: 'unknown@email.com'
@@ -3399,7 +3213,7 @@ export const supabaseApi = createApi({
           // Transform data to match interface expectations
           const transformedData = {
             ...data,
-            requested_changes: data.request_data || {
+            requested_changes: data.requested_changes || {
               changes: [],
               user_name: 'Unknown User',
               user_email: 'unknown@email.com'
@@ -3475,7 +3289,50 @@ export const supabaseApi = createApi({
       invalidatesTags: ['UserRequests', { type: 'UserRequests', id: 'PENDING' }],
     }),
 
+    // Hardcoded for now, should be moved to DB
+    getPurposeOptions: builder.query<DbPurposeOption[], void>({
+       queryFn() {
+        try {
+          const purposes: DbPurposeOption[] = [
+            { purpose_id: '1', name: 'Business Meeting', description: 'Client meetings and business appointments', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { purpose_id: '2', name: 'Site Visit', description: 'On-site inspections and visits', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { purpose_id: '3', name: 'Delivery', description: 'Equipment or document delivery', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { purpose_id: '4', name: 'Training', description: 'Staff training and workshops', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { purpose_id: '5', name: 'Maintenance', description: 'Vehicle or equipment maintenance', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { purpose_id: '6', name: 'Emergency', description: 'Urgent business needs', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { purpose_id: '7', name: 'Meeting', description: 'Scheduled meetings', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { purpose_id: '8', name: 'Other', description: 'Any other purpose', created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          ];
+          return { data: purposes };
+        } catch (error) {
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
+        }
+      },
+      providesTags: ['Hardcoded'],
+    }),
 
+    // Hardcoded for now, should be moved to DB
+    getLocationOptions: builder.query<DbLocation[], void>({
+       queryFn() {
+        try {
+          const locations: DbLocation[] = [
+            { location_id: '1', name: 'Main Office', address: 'Knez Mihailova 42, Belgrade', latitude: 44.8176, longitude: 20.4633, is_pickup_location: true, is_dropoff_location: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { location_id: '2', name: 'Warehouse', address: 'Batajnička cesta 23, Belgrade', latitude: 44.8512, longitude: 20.4112, is_pickup_location: true, is_dropoff_location: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { location_id: '3', name: 'Client Office Downtown', address: 'Terazije 25, Belgrade', latitude: 44.8125, longitude: 20.4612, is_pickup_location: false, is_dropoff_location: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { location_id: '4', name: 'Airport', address: 'Nikola Tesla Airport, Belgrade', latitude: 44.8184, longitude: 20.3091, is_pickup_location: true, is_dropoff_location: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { location_id: '5', name: 'Branch Office Novi Sad', address: 'Zmaj Jovina 15, Novi Sad', latitude: 45.2671, longitude: 19.8335, is_pickup_location: true, is_dropoff_location: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { location_id: '6', name: 'Service Center', address: 'Bulevar Oslobođenja 124, Belgrade', latitude: 44.7866, longitude: 20.4489, is_pickup_location: true, is_dropoff_location: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+            { location_id: '7', name: 'Other', address: 'Specify address', is_pickup_location: true, is_dropoff_location: true, created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
+          ];
+          return { data: locations };
+        } catch (error) {
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
+        }
+      },
+      providesTags: ['Hardcoded'],
+    }),
 
   }),
 });

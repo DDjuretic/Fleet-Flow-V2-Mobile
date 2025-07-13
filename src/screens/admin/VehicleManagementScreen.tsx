@@ -32,12 +32,17 @@ import {
   useDeleteVehicleMutation,
   DbVehicle,
   DbVehicleType,
-  DbFuelType
-  } from '../../store/api/supabaseApi';
+  DbFuelType,
+  DbUserShort
+} from '../../store/api/supabaseApi';
 import { showSuccessToast, showErrorToast, showWarningToast } from '../../utils/toastUtils';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../../types/navigation';
+
+type ScreenColors = typeof Colors.LIGHT & { shadow: string };
 
 // Helper function to create styles dynamically
-const getStyles = (screenColors: any) => StyleSheet.create({
+const getStyles = (screenColors: ScreenColors) => StyleSheet.create({
     container: { flex: 1, backgroundColor: screenColors.background },
     header: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 12, borderBottomWidth: 1, borderBottomColor: screenColors.border },
     headerTitle: { fontSize: 22, fontWeight: 'bold', color: screenColors.text, marginLeft: 16 },
@@ -109,24 +114,24 @@ const initialFormData = {
 
 type VehicleFormData = typeof initialFormData;
 
-interface SelectorModalProps {
+interface SelectorModalProps<T> {
   visible: boolean;
   onClose: () => void;
-  onSelect: (item: any) => void;
+  onSelect: (item: T) => void;
   title: string;
   selectedId?: string | null;
-  data: any[] | undefined;
+  data: ReadonlyArray<T> | undefined;
   isLoading: boolean;
-  renderItem: (item: any) => { id: string; name: string; description?: string };
+  renderItem: (item: T) => { id: string; name: string; description?: string };
 }
 
-const SelectorModal: React.FC<SelectorModalProps> = ({ visible, onClose, onSelect, title, selectedId, data, isLoading, renderItem }) => {
+const SelectorModal = <T,>({ visible, onClose, onSelect, title, selectedId, data, isLoading, renderItem }: SelectorModalProps<T>) => {
     const { t } = useTranslation();
     const themeMode = useSelector((state: RootState) => state.theme.mode);
     const screenColors = useMemo(() => (themeMode === 'dark' ? Colors.DARK : Colors.LIGHT), [themeMode]);
-    const styles = useMemo(() => getStyles(screenColors), [screenColors]);
+    const styles = useMemo(() => getStyles({ ...screenColors, shadow: 'transparent' }), [screenColors]);
 
-    const renderModalItem = ({ item }: { item: any }) => {
+    const renderModalItem = ({ item }: { item: T }) => {
         const { id, name, description } = renderItem(item);
         const isSelected = selectedId === id;
         return (
@@ -167,7 +172,9 @@ const SelectorModal: React.FC<SelectorModalProps> = ({ visible, onClose, onSelec
     );
 };
 
-const VehicleManagementScreen: React.FC<{ navigation: any }> = ({ navigation }) => {
+type VehicleManagementScreenNavigationProp = StackNavigationProp<RootStackParamList, 'VehicleManagement'>;
+
+const VehicleManagementScreen: React.FC<{ navigation: VehicleManagementScreenNavigationProp }> = ({ navigation }) => {
   const { t } = useTranslation();
   const themeMode = useSelector((state: RootState) => state.theme.mode);
   const screenColors = useMemo(() => (themeMode === 'dark' ? { ...Colors.DARK, shadow: 'rgba(255, 255, 255, 0.1)' } : { ...Colors.LIGHT, shadow: 'rgba(0, 0, 0, 0.1)' }), [themeMode]);
@@ -199,102 +206,120 @@ const VehicleManagementScreen: React.FC<{ navigation: any }> = ({ navigation }) 
 
   const [formData, setFormData] = useState<VehicleFormData>(initialFormData);
 
-  const handleInputChange = (field: keyof VehicleFormData, value: any) => {
+  const handleInputChange = (field: keyof VehicleFormData, value: string | boolean) => {
       setFormData(prev => ({ ...prev, [field]: value }));
   };
 
   const handleOpenModal = (vehicle: DbVehicle | null) => {
-    console.log('Opening modal with vehicle:', vehicle);
     setEditingVehicle(vehicle);
     if (vehicle) {
-        console.log('Vehicle ID:', vehicle.vehicle_id);
-        const vehicleFormData = Object.keys(initialFormData).reduce((acc, key) => {
-            const value = (vehicle as any)[key];
-            (acc as any)[key] = value !== null && value !== undefined ? String(value) : '';
-            return acc;
-        }, {} as VehicleFormData);
-        console.log('Form data created:', vehicleFormData);
+        const vehicleFormData = Object.fromEntries(
+            Object.keys(initialFormData).map(key => {
+                const typedKey = key as keyof DbVehicle;
+                const value = vehicle[typedKey];
+                return [key, value !== null && value !== undefined ? String(value) : ''];
+            })
+        ) as unknown as VehicleFormData;
         setFormData(vehicleFormData);
     } else {
-        console.log('Creating new vehicle - using initial form data');
         setFormData(initialFormData);
     }
     setModalVisible(true);
   };
 
   const handleSave = async () => {
-    // Basic validation for required fields
-    if (!formData.make.trim()) {
-      showErrorToast('common.error', 'vehicle_make_required');
-      return;
-    }
-    
-    if (!formData.model.trim()) {
-      showErrorToast('common.error', 'vehicle_model_required');
-      return;
-    }
-    
-    if (!formData.license_plate.trim()) {
-      showErrorToast('common.error', 'vehicle_license_plate_required');
-      return;
+    // Basic validation
+    if (!formData.make.trim() || !formData.model.trim() || !formData.license_plate.trim()) {
+        showWarningToast(t('common.warning'), t('errors.fill_required_fields_vehicle'));
+        return;
     }
 
     const dataToSave: Partial<DbVehicle> = {};
+    // Convert form data (strings) to appropriate types for DB
     for (const key in formData) {
         const typedKey = key as keyof VehicleFormData;
         const value = formData[typedKey];
 
-        if (value === '' || value === null || value === undefined) {
+        if (value === '' || value === null) {
             (dataToSave as any)[typedKey] = null;
-        } else if (['year', 'seats_count', 'pallet_capacity', 'engine_volume_cc', 'service_interval_km', 'service_interval_months'].includes(typedKey)) {
-            (dataToSave as any)[typedKey] = parseInt(String(value), 10);
-        } else if (typeof value === 'boolean') {
-             (dataToSave as any)[typedKey] = value;
-        } else if (!isNaN(Number(value))) {
-             (dataToSave as any)[typedKey] = Number(value);
         } else {
-             (dataToSave as any)[typedKey] = value;
+            switch (typedKey) {
+                case 'year':
+                case 'seats_count':
+                case 'pallet_capacity':
+                case 'engine_volume_cc':
+                case 'service_interval_km':
+                case 'service_interval_months':
+                case 'current_odometer':
+                    (dataToSave as any)[typedKey] = parseInt(String(value), 10);
+                    break;
+                case 'fuel_tank_capacity':
+                case 'battery_capacity_kwh':
+                case 'avg_consumption':
+                case 'engine_power_kw':
+                case 'engine_power_hp':
+                case 'fuel_consumption_city':
+                case 'fuel_consumption_highway':
+                case 'fuel_consumption_combined':
+                case 'registration_cost_annual':
+                case 'insurance_cost_annual':
+                case 'fare_per_km':
+                case 'fare_base_price':
+                case 'ticket_price':
+                case 'cargo_capacity_kg':
+                case 'cargo_volume_m3':
+                    (dataToSave as any)[typedKey] = parseFloat(String(value));
+                    break;
+                case 'is_private_vehicle':
+                case 'is_public_transport':
+                    (dataToSave as any)[typedKey] = value;
+                    break;
+                default:
+                    (dataToSave as any)[typedKey] = value;
+            }
         }
     }
-
+    
     try {
-      if (editingVehicle) {
-        console.log('Updating vehicle with ID:', editingVehicle.vehicle_id);
-        console.log('Data to save:', dataToSave);
-        if (!editingVehicle.vehicle_id) {
-          console.error('ERROR: editingVehicle has no vehicle_id!', editingVehicle);
-          showErrorToast('common.error', 'invalid_vehicle_id');
-          return;
+        if (editingVehicle) {
+            await updateVehicle({ vehicle_id: editingVehicle.vehicle_id, ...dataToSave }).unwrap();
+            showSuccessToast(t('common.success'), t('success.vehicle_updated'));
+        } else {
+            await createVehicle(dataToSave as DbVehicle).unwrap(); // Assuming all required fields are present
+            showSuccessToast(t('common.success'), t('success.vehicle_created'));
         }
-        await updateVehicle({ vehicle_id: editingVehicle.vehicle_id, ...dataToSave }).unwrap();
-        showSuccessToast('common.success', 'vehicle_updated_success');
-      } else {
-        console.log('Creating new vehicle with data:', dataToSave);
-        await createVehicle(dataToSave).unwrap();
-        showSuccessToast('common.success', 'vehicle_added_success');
-      }
-      setModalVisible(false);
-      refetchVehicles();
+        setModalVisible(false);
+        refetchVehicles();
     } catch (error) {
-      console.error('Failed to save vehicle:', error);
-      console.error('Error details:', JSON.stringify(error, null, 2));
-      showErrorToast('common.error', 'failed_to_save_vehicle');
+        console.error("Failed to save vehicle:", error);
+        const errorMessage = error instanceof Error ? error.message : t('errors.failed_to_save_vehicle');
+        showErrorToast(t('common.error'), errorMessage);
     }
   };
 
   const handleDelete = (vehicle: DbVehicle) => {
-    Alert.alert(t('confirm_delete_vehicle_title'), t('confirm_delete_vehicle_message'), [
-      { text: t('cancel'), style: 'cancel' },
-      { text: t('delete'), style: 'destructive', onPress: async () => {
-        try {
-          await deleteVehicle(vehicle.vehicle_id).unwrap();
-          showSuccessToast('common.success', 'vehicle_deleted_success');
-          refetchVehicles();
-        } catch (error) {
-          showErrorToast('common.error', 'failed_to_delete_vehicle');
-        }
-      }}
-    ]);
+    Alert.alert(
+      t('confirm_delete_vehicle_title'),
+      t('confirm_delete_vehicle_message', { make: vehicle.make, model: vehicle.model }),
+      [
+        { text: t('common.cancel'), style: 'cancel' },
+        {
+          text: t('common.delete'),
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteVehicle(vehicle.vehicle_id).unwrap();
+              showSuccessToast(t('common.success'), t('success.vehicle_deleted'));
+              refetchVehicles();
+            } catch (error) {
+              console.error("Failed to delete vehicle:", error);
+              const errorMessage = error instanceof Error ? error.message : t('errors.failed_to_delete_vehicle');
+              showErrorToast(t('common.error'), errorMessage);
+            }
+          },
+        },
+      ]
+    );
   };
   
   const getVehicleTypeName = (id: string | null | undefined) => {
@@ -465,44 +490,37 @@ const VehicleManagementScreen: React.FC<{ navigation: any }> = ({ navigation }) 
         </SafeAreaView>
       </Modal>
 
-      <SelectorModal
+      <SelectorModal<DbVehicleType>
         visible={showVehicleTypeModal}
         onClose={() => setShowVehicleTypeModal(false)}
-        onSelect={item => handleInputChange('vehicle_type_id', item.vehicle_type_id)}
+        onSelect={(item) => handleInputChange('vehicle_type_id', item.vehicle_type_id)}
         title={t('select_vehicle_type')}
         selectedId={formData.vehicle_type_id}
         data={vehicleTypesData}
         isLoading={isLoadingVehicleTypes}
-        renderItem={item => ({ id: item.vehicle_type_id, name: String(t(`vehicle_types.${item.name.toLowerCase()}`, item.name)), description: item.description ? String(t(`vehicle_type_descriptions.${item.name.toLowerCase()}`, item.description)) : undefined })}
+        renderItem={(item) => ({ id: item.vehicle_type_id, name: item.name, description: item.description || '' })}
       />
 
-      <SelectorModal
+      <SelectorModal<DbFuelType>
         visible={showFuelTypeModal}
         onClose={() => setShowFuelTypeModal(false)}
-        onSelect={item => handleInputChange('fuel_type_id', item.fuel_type_id)}
+        onSelect={(item) => handleInputChange('fuel_type_id', item.fuel_type_id)}
         title={t('select_fuel_type')}
         selectedId={formData.fuel_type_id}
         data={fuelTypesData}
         isLoading={isLoadingFuelTypes}
-        renderItem={item => ({ id: item.fuel_type_id, name: String(t(`fuel_types.${item.name.toLowerCase()}`, item.name)) })}
+        renderItem={(item) => ({ id: item.fuel_type_id, name: item.name, description: item.description || '' })}
       />
 
-      <SelectorModal
+      <SelectorModal<DbUserShort>
         visible={showUserModal}
         onClose={() => setShowUserModal(false)}
-        onSelect={item => {
-          handleInputChange('private_owner_id', item.user_id);
-          handleInputChange('private_owner_name', `${item.first_name} ${item.last_name}`.trim());
-        }}
-        title={t('select_vehicle_owner', 'Select Vehicle Owner')}
+        onSelect={(item) => handleInputChange('private_owner_id', item.user_id)}
+        title={t('select_owner')}
         selectedId={formData.private_owner_id}
         data={usersData}
         isLoading={isLoadingUsers}
-        renderItem={item => ({ 
-          id: item.user_id, 
-          name: `${item.first_name} ${item.last_name}`.trim(),
-          description: item.email || undefined
-        })}
+        renderItem={(item) => ({ id: item.user_id, name: item.full_name || 'Unnamed User', description: item.email || '' })}
       />
 
     </SafeAreaView>

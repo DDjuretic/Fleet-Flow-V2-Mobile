@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -33,17 +33,31 @@ import { RootStackParamList } from '../../types/navigation';
 
 // Types - Original Reminder interface is now replaced by DbReminder, or we map DbReminder to this structure
 // For simplicity, we'll try to adapt to DbReminder structure where possible
-// interface Reminder {
-//   id: string;
-//   title: string;
-//   description: string;
-//   type: 'maintenance' | 'inspection' | 'insurance' | 'registration' | 'fuel' | 'custom';
-//   dueDate: string;
-//   isCompleted: boolean;
-//   vehicleId?: string;
-//   vehicleName?: string;
-//   priority: 'low' | 'medium' | 'high';
-// }
+interface Reminder {
+  id: string;
+  title: string;
+  description: string;
+  type: 'maintenance' | 'inspection' | 'insurance' | 'registration' | 'fuel' | 'custom';
+  dueDate: string;
+  isCompleted: boolean;
+  vehicleId?: string;
+  vehicleName?: string;
+  priority: 'low' | 'medium' | 'high';
+}
+
+type ScreenColors = {
+  primary: string;
+  secondary: string;
+  success: string;
+  warning: string;
+  danger: string;
+  background: string;
+  card: string;
+  text: string;
+  textSecondary: string;
+  border: string;
+  white: string;
+};
 
 export default function RemindersScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
@@ -89,7 +103,7 @@ export default function RemindersScreen() {
     refetch: refetchReminders 
   } = useGetRemindersQuery(undefined, { skip: authLoading || !session });
 
-  const getTypeIcon = (reminderType?: string) => { // reminderType is now reminder_types.name
+  const getTypeIcon = (reminderType?: string): keyof typeof Ionicons.glyphMap => { // reminderType is now reminder_types.name
     switch (reminderType?.toLowerCase()) { // Use toLowerCase for case-insensitive matching
       case 'maintenance':
         return 'construct-outline';
@@ -405,7 +419,7 @@ export default function RemindersScreen() {
 }
 
 // Moved StyleSheet.create into a function that accepts themed colors
-const getStyles = (colors: any) => StyleSheet.create({
+const getStyles = (colors: ScreenColors) => StyleSheet.create({
   container: {
     flex: 1,
     // backgroundColor will be set dynamically by SafeAreaView

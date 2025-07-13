@@ -10,11 +10,12 @@ import {
   Image,
   Animated,
   Easing,
+  LayoutChangeEvent
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { WebView } from 'react-native-webview';
 import Colors from '../../constants/Colors';
-import { geocodeAddress, GeocodeResult, reverseGeocode } from '../../services/geocodingService';
+import { geocodeAddress, GeocodeResult as _GeocodeResult, reverseGeocode } from '../../services/geocodingService';
 import { LocationCoordinates } from '../../services/locationService';
 import { getNavigationRoute, formatDistance, formatDuration } from '../../services/routingService';
 import { getShortDisplayName } from '../../utils/addressUtils';
@@ -51,14 +52,14 @@ interface ActiveTripCardProps {
   onNavigate?: (tripId: string) => void;
 }
 
-const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+const { width: _screenWidth, height: _screenHeight } = Dimensions.get('window');
 
 export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate }: ActiveTripCardProps) {
   const { t } = useTranslation();
   const themeMode = useSelector((state: RootState) => state.theme.mode);
-  const [isMapLoaded, setIsMapLoaded] = useState(false);
+  const [_isMapLoaded, setIsMapLoaded] = useState(false);
   const [startCoords, setStartCoords] = useState<[number, number]>([42.7087, 19.3744]);
-  const [endCoords, setEndCoords] = useState<[number, number]>([42.7087, 19.3744]);
+  const [_endCoords, setEndCoords] = useState<[number, number]>([42.7087, 19.3744]);
   const [routeCoordinates, setRouteCoordinates] = useState<LocationCoordinates[]>([]);
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
   const [startGeocodedCoords, setStartGeocodedCoords] = useState<LocationCoordinates | null>(null);
@@ -372,7 +373,7 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
     });
   };
 
-  const onTextLayout = (e: any) => {
+  const onTextLayout = (e: LayoutChangeEvent) => {
     const width = e.nativeEvent.layout.width;
     console.log('Text width:', width);
     
@@ -389,7 +390,7 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
     }
   };
 
-  const onContainerLayout = (e: any) => {
+  const onContainerLayout = (e: LayoutChangeEvent) => {
     const width = e.nativeEvent.layout.width;
     console.log('Container width:', width);
     
@@ -490,7 +491,7 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
   // 🚀 OPTIMIZACIJA: Kombinujem weather i location logiku u jedan useEffect
   useEffect(() => {
     let weatherInterval: ReturnType<typeof setInterval> | null = null;
-    let alertInterval: ReturnType<typeof setInterval> | null = null;
+    // let alertInterval: ReturnType<typeof setInterval> | null = null; // Uklonjeno jer se ne koristi
     
     const initializeLocationAndWeather = async () => {
       // Fetch current location initially
@@ -517,7 +518,7 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
     
     return () => {
       if (weatherInterval) clearInterval(weatherInterval);
-      if (alertInterval) clearInterval(alertInterval);
+      // if (alertInterval) clearInterval(alertInterval); // Uklonjeno jer se ne koristi
     };
   }, [startCoords, currentLocation]); // Kombinujem dependency
 
