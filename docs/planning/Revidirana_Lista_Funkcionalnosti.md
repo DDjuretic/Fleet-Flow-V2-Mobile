@@ -1,8 +1,8 @@
 **Fleet Flow Next Gen: Revidirana Lista Funkcionalnosti sa Fazama Implementacije**
 
 **Inicijalni Set Funkcionalnosti (Core Features)**
-*(Ove funkcionalnosti predstavljaju osnovu aplikacije. Dizajn baze podataka je inicijalno postavljen da podrži ove funkcionalnosti. Razvoj će pratiti faze definisane u `Plan_Implementacije.md`, gde ove funkcionalnosti uglavnom spadaju pod Fazu 2 i Fazu 3 tog plana.)*
-*(Mobilna aplikacija će biti razvijana koristeći React Native/Expo, a Web aplikacija koristeći Next.js/React.)*
+*(Ove funkcionalnosti predstavljaju osnovu aplikacije. Razvoj će pratiti faze definisane u [docs/planning/PUTNI_NALOG_IMPLEMENTATION_PLAN.md](./PUTNI_NALOG_IMPLEMENTATION_PLAN.md) i [docs/planning/PROJECT_BLUEPRINT.md](./PROJECT_BLUEPRINT.md).)*
+*(Mobilna aplikacija će biti razvijana koristeći React Native/Expo, a Web aplikacija koristeći Next.js/React u kasnijim fazama.)*
 
 **I. Osnovne Korisničke Funkcionalnosti (Mobilna & Web)**
     *   **1. Autentifikacija i Korisnički Profil:**
@@ -127,21 +127,21 @@
     *   **22. Sinhronizacija Podataka (za offline rad).** *(Core - Osnovna podrška, unapređenje po potrebi)*
     *   **23. Bezbednost (uključujući hash lozinki).** *(Core - Obezbeđeno kroz Supabase)*
     *   **24. Monitoring i Logovanje (osnovno).** *(Core)*
-    *   **25. System Logs & Monitoring (IMPLEMENTIRANO ✅):**
-        *   **Comprehensive System Logs:** Tabela sa kompletnim schema (log_id, severity, type, metadata)
-        *   **Expense Monitoring:** Automatska detekcija HIGH_EXPENSE (gorivo >€200, obroci >€100)
-        *   **Suspicious Pattern Detection:** Multiple same-day expenses, unusual patterns
-        *   **Vehicle Performance Tracking:** Fuel efficiency, maintenance alerts
-        *   **Security Monitoring:** Unauthorized access attempts, login anomalies
-        *   **Real-time Notifications:** Automatske notifikacije za HIGH/CRITICAL alerts
-        *   **Admin Panel Integration:** SystemLogsAndMonitoringScreen sa filtering i resolution
-        *   **API Endpoints:** Complete CRUD, stats, resolution workflow
-        *   *(IMPLEMENTIRANO - Produkcija ready)*
+    *   **25. System Logs & Monitoring (PLANIRANO ZA BUDUĆE FAZE):**
+        *   Comprehensive System Logs: Tabela sa kompletnim schema (log_id, severity, type, metadata)
+        *   Expense Monitoring: Automatska detekcija HIGH_EXPENSE (gorivo >€200, obroci >€100)
+        *   Suspicious Pattern Detection: Multiple same-day expenses, unusual patterns
+        *   Vehicle Performance Tracking: Fuel efficiency, maintenance alerts
+        *   Security Monitoring: Unauthorized access attempts, login anomalies
+        *   Real-time Notifications: Automatske notifikacije za HIGH/CRITICAL alerts
+        *   Admin Panel Integration: SystemLogsAndMonitoringScreen sa filtering i resolution
+        *   API Endpoints: Complete CRUD, stats, resolution workflow
+        *   *(Ova funkcionalnost će biti razvijena u kasnijim fazama nakon stabilizacije osnovnih modula)*
 
 ---
 
 **Kasnije Faze Razvoja (Funkcionalnosti iznad Core Seta)**
-*(Baza podataka dizajnirana za Core set će imati osnovne tabele/polja za podršku nekim od ovih modula. Potpuna implementacija funkcionalnosti sledi nakon implementacije Core seta i biće usklađena sa `Plan_Implementacije.md`.)*
+*(Baza podataka dizajnirana za Core set će imati osnovne tabele/polja za podršku nekim od ovih modula. Potpuna implementacija funkcionalnosti sledi nakon implementacije Core seta i biće usklađena sa [docs/planning/PUTNI_NALOG_IMPLEMENTATION_PLAN.md](./PUTNI_NALOG_IMPLEMENTATION_PLAN.md).)*
 
 *   **IV. Dodatne Napredne Funkcionalnosti**
     *   **25. Geofencing i Automatizacija Zasnovana na Lokaciji:**
@@ -178,7 +178,7 @@
 ---
 
 **Faza 2 i Kasnije: Buduća Proširenja / Modularni Dodaci**
-*(Ove funkcionalnosti se trenutno ne uključuju detaljno u dizajn baze za Core set, osim što će se baza dizajnirati da bude generalno proširiva. Implementacija ovih modula zahtevaće dodatno planiranje i potencijalno proširenje baze.)*
+*(Ove funkcionalnosti se trenutno ne uključuju detaljno u dizajn baze za Core set, osim što će se baza dizajnirati da bude generalno proširiva. Implementacija ovih modula zahtevaće dodatno planiranje i potencijalno proširenje baze. Biće usklađena sa [docs/planning/PUTNI_NALOG_IMPLEMENTATION_PLAN.md](./PUTNI_NALOG_IMPLEMENTATION_PLAN.md).)*
 
 *   Napredno Upravljanje Zalihama Rezervnih Delova (iz tačke 25).
 *   Potpuna Integracija sa Servisnim Radionicama (iz tačke 25).

@@ -8,18 +8,18 @@ Ovaj vodič definiše standardni workflow za development novih feature-a, od ide
 
 ## 📋 **TRENUTNO STANJE PROJEKTA**
 
-### ✅ **KOMPLETNO IMPLEMENTIRANO**
-- **System Logs & Monitoring**: 100% - Real-time monitoring sa anomaly detection
-- **Web Application Core**: 95% - Dashboard, CRUD operations, workflows
-- **Mobile Application**: 100% - Production ready sa Redux Toolkit
-- **Authentication**: 100% - Supabase auth fully integrated
-- **Database Schema**: 100% - PostgreSQL sa RLS policies
+*Napomena: S obzirom na odluku o novom početku projekta (detaljnije u `docs/cursor_duboka_analiza_mobilne_aplikacij.md` i `docs/planning/PUTNI_NALOG_IMPLEMENTATION_PLAN.md`), sledeće stanje je inicijalni cilj nakon uspešne migracije i stabilizacije.* 
 
-### 🚧 **SLEDEĆI PRIORITETI (Referenca: SYSTEM_LOGS_ROADMAP.md)**
-1. **Enhanced Monitoring Logic** (HIGH - 2-3 nedelje)
-2. **Machine Learning Integration** (MEDIUM - 4-6 nedelja)  
-3. **Push Notifications** (HIGH - 2 nedelje)
-4. **Advanced Reporting** (MEDIUM - 4 nedelje)
+### ✅ **Inicijalni Ciljevi Nakon Novog Početka (Mobilna Aplikacija)**
+- **Osnovna Konfiguracija Projekta**: 100% - Novo, čisto Expo okruženje sa usklađenim zavisnostima.
+- **Supabase Autentifikacija**: 100% - Korisnik može uspešno da se registruje i uloguje na lokalnu Supabase bazu. (Milestone 1).
+- **React Navigation**: 100% - Osnovna navigacija (Login/Register, Tab Navigator) postavljena.
+- **Redux Toolkit**: 100% - Osnovni Redux store i `authSlice` konfigurisani.
+- **TypeScript**: 100% - Konfigurisan i koristi se kroz ceo projekat.
+- **i18n**: 100% - Osnovna internacionalizacija postavljena.
+
+### 🚧 **SLEDEĆI PRIORITETI (Nakon inicijalne stabilizacije)**
+Ovi prioriteti će biti definisani nakon što se postigne inicijalna stabilnost i funkcionalnost. Detaljan plan je u `docs/planning/PUTNI_NALOG_IMPLEMENTATION_PLAN.md`.
 
 ## 🔄 **Branch Strategy**
 
@@ -112,7 +112,7 @@ git push -u origin feature/FF-123-vehicle-tracking
 npx supabase start
 
 # Install dependencies (ako su dodane nove)
-npm install
+npx expo install --fix # Koristi Expo CLI za sigurnu instalaciju i usklađivanje zavisnosti
 
 # Kreiraj database migration (ako je potrebno)
 npx supabase migration new "add_vehicle_tracking_tables"
@@ -171,8 +171,7 @@ npx supabase migration new "add_vehicle_tracking"
 npx supabase db reset
 
 # 4. Generiši TypeScript tipove
-npx supabase gen types typescript --local > apps/mobile/src/types/supabase.ts
-npx supabase gen types typescript --local > apps/web/src/types/supabase.ts
+npx supabase gen types typescript --local > src/types/supabase.ts
 
 # 5. Commit migration
 git add supabase/migrations/

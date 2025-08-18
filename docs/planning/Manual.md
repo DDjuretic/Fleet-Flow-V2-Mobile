@@ -1,8 +1,8 @@
-# Fleet Flow - Application Manual
+# Fleet Flow - Project Status Snapshot (Historical)
 
 **Creation Date:** 2025-05-30  
 **Version:** 1.0 (Alpha)  
-**Status:** In Development  
+**Status:** Archived (Represents project state *before* the "Fresh Start" initiative).
 
 ---
 
@@ -19,28 +19,24 @@
 
 ---
 
-## 🔧 Currently Implemented Features
+## 🔧 Features Implemented Before "Fresh Start" (Historical)
 
-### ✅ **Phase 1: Basic Setup (COMPLETED)**
+### ✅ **Phase 1: Basic Setup (COMPLETED - Historical)**
 
 #### 🔐 **Auth System**
 - **User Registration**
-  - Location: `apps/mobile/src/screens/auth/RegisterScreen.tsx`
   - Input: First Name, Last Name, Email, Password, Confirm Password
   - Validation: Check all fields, password matching, min 6 characters
   - Backend: Saves to Supabase auth.users + user_metadata
 
 - **User Login**  
-  - Location: `apps/mobile/src/screens/auth/LoginScreen.tsx`
   - Input: Email, Password
   - Functionality: Fully functional signin with session management
 
 - **User Logout**
-  - Location: Dashboard Sign Out button
   - Functionality: Clears session and returns to login screen
 
 #### 🏠 **Dashboard**
-- **Location**: `apps/mobile/src/screens/DashboardScreen.tsx`  
 - **Features**:
   - Displays welcome message with user name
   - Shows email address
@@ -48,25 +44,25 @@
   - Sign Out option
 
 #### 🔧 **Technical Implementation**
-- **Custom Supabase Client** (`apps/mobile/src/lib/supabase.ts`)
+- **Custom Supabase Client**
   - Fetch-based API calls (avoiding WebSocket issues)
   - Fully functional auth state management
   - Real-time listener system for auth changes
   - IP address configuration for mobile devices
 
-- **AuthContext** (`apps/mobile/src/contexts/AuthContext.tsx`)
+- **AuthContext**
   - Centralized auth state management
   - Loading states for better user experience
   - Error handling for auth operations
 
-- **Navigation** (`apps/mobile/App.js`)
+- **Navigation**
   - Conditional rendering based on auth state
   - Loading screen during auth check
   - Stack Navigator for auth flow
 
 ---
 
-## 🚧 **In Development - Next Phases**
+## 🚧 **Features Planned Before "Fresh Start"**
 
 ### **Phase 2: Onboarding Process (NEXT)**
 
@@ -102,61 +98,32 @@
 
 ---
 
-## 🗂️ **File Structure**
+## 🗂️ **File Structure (Historical - Refer to DEVELOPMENT_GUIDE.md for current)**
 
 ```
-apps/mobile/
+// Old, pre-fresh-start file structure. For current structure, see docs/guides/DEVELOPMENT_GUIDE.md
+// Path references below are also historical.
 ├── src/
 │   ├── screens/
-│   │   ├── main/ ✅ (5 ekrana, svi funkcionalni)
-│   │   │   ├── HomeScreen.tsx ✅
-│   │   │   ├── TripsScreen.tsx ✅  
-│   │   │   ├── ExpensesScreen.tsx ✅
-│   │   │   ├── ReservationsScreen.tsx ✅
-│   │   │   ├── RemindersScreen.tsx ✅
-│   │   │   └── NotificationsScreen.tsx ✅
-│   │   ├── auth/ ✅ (kompletno)
-│   │   │   ├── LoginScreen.tsx ✅
-│   │   │   ├── RegisterScreen.tsx ✅
-│   │   │   └── SplashScreen.tsx ✅
-│   │   ├── onboarding/ ✅ (6-step flow)
-│   │   │   └── OnboardingFlow.tsx ✅
-│   │   ├── admin/ ✅ (kompletno)
-│   │   │   ├── PendingReservationsScreen.tsx ✅
-│   │   │   └── AdminRoleManagementScreen.tsx ✅
-│   │   ├── settings/ ⚠️ (partial)
-│   │   │   ├── SettingsScreen.tsx ✅
-│   │   │   ├── UserProfileScreen.tsx ✅
-│   │   │   ├── EditProfileScreen.tsx ⚠️ (stub)
-│   │   │   └── NotificationsSettingsScreen.tsx ⚠️ (stub)
-│   │   ├── trips/ ⚠️ (partial)
-│   │   │   ├── AddTripScreen.tsx ✅
-│   │   │   ├── TripDetailsScreen.tsx ✅ 
-│   │   │   └── TripMapScreen.tsx ✅
-│   │   ├── expenses/ ⚠️ (partial)
-│   │   │   └── AddExpenseScreen.tsx ⚠️ (layout only)
-│   │   ├── reservations/ ✅ (kompletno)
-│   │   │   ├── AddReservationScreen.tsx ✅
-│   │   │   ├── EditReservationScreen.tsx ✅
-│   │   │   └── ReservationDetailsScreen.tsx ✅
-│   │   └── reminders/ ⚠️ (partial)
-│   │       └── AddReminderScreen.tsx ⚠️ (layout only)
-│   ├── store/ ✅ (kompletno)
-│   │   ├── api/supabaseApi.ts ✅ (extensive)
-│   │   ├── slices/ ✅ (theme, settings)
-│   │   └── index.ts ✅ (persist setup)
-│   ├── contexts/
-│   │   └── AuthContext.tsx            ✅ Implemented
-│   └── lib/
-│       └── supabase.ts                ✅ Custom client
-├── assets/
-│   └── login.png                      ✅ Auth background
-└── App.js                             ✅ Navigation
+│   │   ├── main/ ✅
+│   │   ├── auth/ ✅
+│   │   ├── onboarding/ ✅
+│   │   ├── admin/ ✅
+│   │   ├── settings/ ⚠️ 
+│   │   ├── trips/ ⚠️ 
+│   │   ├── expenses/ ⚠️ 
+│   │   ├── reservations/ ✅
+│   │   └── reminders/ ⚠️ 
+│   ├── store/ ✅
+│   ├── contexts/ ✅
+│   └── lib/ ✅
+├── assets/ ✅
+└── App.tsx ✅
 ```
 
 ---
 
-## 🎨 **Design System**
+## 🎨 **Design System (Historical - Refer to active design documentation if available)**
 
 ### **Colors**
 - **Primary**: `#2563eb` (blue)
@@ -172,7 +139,7 @@ apps/mobile/
 
 ---
 
-## 🔍 **Testing**
+## 🔍 **Testing (Historical - Refer to FEATURE_DEVELOPMENT.md for current strategy)**
 
 ### **Tested Scenarios**
 - ✅ New user registration (`test@example.com`)
@@ -182,13 +149,13 @@ apps/mobile/
 - ✅ User logout
 - ✅ Auth state persistence
 
-### **Known Issues**
+### **Known Issues (Historical)**
 - 📧 Email verification not sent in dev mode (expected behavior)
 - 🌐 Application must use IP address instead of localhost for mobile devices
 
 ---
 
-## 🚀 **Deployment Status**
+## 🚀 **Deployment Status (Historical)**
 
 - **Development**: ✅ Local testing works
 - **Staging**: ❌ Not implemented  
@@ -196,7 +163,7 @@ apps/mobile/
 
 ---
 
-## 📋 **Next Steps**
+## 📋 **Next Steps (Historical - Refer to PUTNI_NALOG_IMPLEMENTATION_PLAN.md for current)**
 
 1. **Implementation of onboarding flow** (6 steps)
 2. **Creating blur backgrounds** for onboarding
@@ -210,7 +177,7 @@ apps/mobile/
 
 **Developer**: Danko Djuretić  
 **Email**: djuretic.danko@gmail.com  
-**Project**: Fleet Flow Next Generation  
+**Project**: Fleet Flow V2 Mobile  
 **GitHub**: [Repository Link]
 
 ---

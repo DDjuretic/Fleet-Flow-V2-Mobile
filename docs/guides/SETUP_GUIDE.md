@@ -1,6 +1,6 @@
-# Fleet Flow Next Gen - Complete Setup & Collaboration Guide
+# Fleet Flow V2 Mobile - Complete Setup & Collaboration Guide
 
-This guide provides a comprehensive walkthrough for setting up the Fleet Flow Next Gen development environment on a new computer, cloning the repository, and collaborating effectively with the team.
+This guide provides a comprehensive walkthrough for setting up the Fleet Flow V2 Mobile development environment on a new computer, creating a new project based on our "fresh start" strategy, and collaborating effectively with the team.
 
 ---
 
@@ -16,6 +16,8 @@ This section covers the one-time installation of all necessary tools and softwar
 # Install necessary tools
 brew install node@18 git gh supabase/tap/supabase
 brew install --cask cursor docker
+# Install Expo Application Services CLI (EAS CLI) for builds and deployments
+npm install -g eas-cli
 ```
 
 ### Windows Setup (using winget)
@@ -26,6 +28,7 @@ winget install GitHub.cli
 winget install Cursor.Cursor
 winget install Docker.DockerDesktop
 npm install -g supabase # Install Supabase CLI via npm
+npm install -g eas-cli  # Install Expo Application Services CLI (EAS CLI)
 ```
 
 ### Linux (Ubuntu/Debian) Setup
@@ -38,6 +41,7 @@ sudo apt-get install -y nodejs
 sudo apt install git gh docker.io docker-compose
 # Install Supabase CLI
 npm install -g supabase
+npm install -g eas-cli  # Install Expo Application Services CLI (EAS CLI)
 ```
 
 ---
@@ -68,40 +72,60 @@ gh auth login
 
 ---
 
-## 3. Project Setup
+## 3. Project Setup (Initial "Fresh Start" for Mobile App)
 
-### Clone the Repository
+This section outlines the process for setting up the new, clean Fleet Flow V2 Mobile project.
+
+### Create New Project
+```bash
+# Navigate to your desired development directory (outside any existing project folders)
+cd /path/to/your/development/folder
+
+# Create the new Expo project
+npx create-expo-app Fleet-Flow-V2-Mobile --template blank-ts
+
+# Navigate into the new project directory
+cd Fleet-Flow-V2-Mobile
+```
+
+### Clone Existing Code (Optional, if using an existing repository for the new project)
+*If you are reusing the existing Fleet-Flow-V2-Mobile repository but starting fresh, clone it first. Otherwise, skip this and proceed with code migration.*
 ```bash
 # Using SSH (Recommended)
-git clone git@github.com:DDjuretic/Fleet-Flow-Next-Gen.git
-cd Fleet-Flow-Next-Gen
+git clone git@github.com:DDjuretic/Fleet-Flow-V2-Mobile.git
+cd Fleet-Flow-V2-Mobile
 ```
 
 ### Configure Environment Variables
-The project uses a central `.env` file in the root directory.
+The project uses `.env` files for environment-specific variables. For local development, create a `.env` file in the root directory.
 ```bash
-# Copy the example file
-cp .env.example .env
-
-# Open the file and fill in your Supabase credentials
-nano .env
-```
-Your `.env` file should contain:
-```env
+# Example .env file for local Supabase
+# IMPORTANT: DO NOT COMMIT THIS FILE TO GIT!
 SUPABASE_URL=http://127.0.0.1:54321
-SUPABASE_ANON_KEY=your_local_anon_key
-SUPABASE_SERVICE_ROLE_KEY=your_local_service_role_key
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU
+
+# Expo-specific public variables
+EXPO_PUBLIC_SUPABASE_URL=http://127.0.0.1:54321
+EXPO_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0
 ```
 
-### Install Dependencies & Start Services
+### Initialize Supabase & Apply Migrations
 ```bash
-# 1. Install all dependencies from the root
-npm install --legacy-peer-deps
+# Initialize Supabase local project setup
+npx supabase init
 
-# 2. Start the local Supabase instance (Docker is required)
-npx supabase start
+# Copy existing migrations (if any) from the old project to supabase/migrations/
+
+# Start local Supabase services (Docker must be running)
+npx supabase start # This will also apply all existing database migrations automatically
 ```
-This command will also apply all existing database migrations automatically.
+
+### Install Dependencies
+```bash
+# Install all dependencies using Expo CLI for compatibility
+npx expo install --fix
+```
 
 ---
 
@@ -114,13 +138,13 @@ git checkout main
 git pull origin main
 
 # 2. Install any new dependencies that might have been added
-npm install --legacy-peer-deps
+npx expo install --fix # Use Expo CLI to ensure compatibility
 
-# 3. Apply any new database migrations
-npx supabase start # This will check and apply any new migrations
+# 3. Apply any new database migrations and start local Supabase
+npx supabase start 
 
 # 4. Start the development server for the mobile app
-npm run ios # or npm run android
+npm start # or npx expo start
 ```
 
 ### Working on a Feature

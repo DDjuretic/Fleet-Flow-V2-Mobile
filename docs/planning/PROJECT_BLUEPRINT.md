@@ -20,7 +20,7 @@ The core value proposition is to provide a powerful, yet user-friendly tool for 
 - **Backend & Database:** Supabase (PostgreSQL)
 - **State Management:** Redux Toolkit
 - **UI (Web):** Tailwind CSS
-- **UI (Mobile):** NativeWind / StyleSheet
+- **UI (Mobile):** StyleSheet (with custom components)
 - **Styling:** Consistent styling across both platforms.
 - **i18n:** Fully internationalized with support for EN, SR, DE, ME.
 
@@ -28,11 +28,11 @@ The core value proposition is to provide a powerful, yet user-friendly tool for 
 
 This is a high-level roadmap combining business features and technical implementation.
 
-- **Phase 1: Core Platform & Authentication (Current Focus)**
-    - [x] Stabilize project structure.
-    - [x] Implement the new user registration flow (`signUp` -> `createCompany`).
-    - [x] Establish a clean, well-documented codebase.
-    - [x] Finalize the multi-tenant database schema with RLS.
+- **Phase 1: Core Platform & Authentication (Foundational Work in Progress)**
+    - [ ] Stabilize project structure. (In progress: Ongoing documentation refinement and setup validation)
+    - [ ] Implement the new user registration flow (`signUp` -> `createCompany`). (`createCompany` logic is a future backend task)
+    - [ ] Establish a clean, well-documented codebase. (Ongoing: Documentation is actively being refined)
+    - [ ] Finalize the multi-tenant database schema with RLS. (Ongoing: Initial schema defined, further refinement with `travel_orders` in progress)
 
 - **Phase 2: Core Feature Implementation (MVP)**
     - Implement all features marked as `(Core)` in `Revidirana_Lista_Funkcionalnosti.md`.

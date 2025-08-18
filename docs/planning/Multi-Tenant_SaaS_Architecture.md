@@ -40,7 +40,8 @@
 
 ### 🏢 MULTI-TENANT DATABASE ARCHITECTURE
 
-#### **Opcija 1: Shared Database + Row Level Security (RLS)**
+#### **Opcija 1: Shared Database + Row Level Security (RLS)** ⭐ **PREPORUČENO ZA TRENUTNU FAZU**
+*Ovaj pristup koristi jednu bazu podataka za sve kompanije, oslanjajući se na `company_id` kolonu u tabelama i Supabase RLS politike za izolaciju podataka. Ovo je inicijalno rešenje za naš projekat.* 
 ```sql
 -- Svaka tabela ima company_id kolonu
 CREATE TABLE companies (
@@ -55,13 +56,14 @@ CREATE TABLE companies (
   grace_period_until TIMESTAMP
 );
 
--- RLS policy za sve tabele
+-- RLS policy za sve tabele (primer)
 CREATE POLICY company_isolation ON users 
   FOR ALL TO authenticated 
-  USING (company_id = get_current_company_id());
+  USING (company_id = get_current_company_id()); -- get_current_company_id() je placeholder za funkciju/logiku koja vraća ID kompanije trenutnog korisnika
 ```
 
-#### **Opcija 2: Separate Database per Company** ⭐ **PREPORUČENO**
+#### **Opcija 2: Separate Database per Company (ZA BUDUĆE SKALIRANJE)**
+*Ovaj pristup podrazumeva kreiranje odvojene baze podataka za svaku kompaniju, što pruža maksimalnu izolaciju i performanse, ali značajno povećava kompleksnost infrastrukture i operativnog upravljanja. Ovo je opcija za razmatranje u daljoj budućnosti.* 
 ```typescript
 interface DatabaseConfig {
   [companyId: string]: {
@@ -72,8 +74,9 @@ interface DatabaseConfig {
   };
 }
 
-// Dynamic database connection
+// Dynamic database connection (konceptualni primer)
 const getCompanyDatabase = (companyId: string) => {
+  // Logika za dinamičko uspostavljanje konekcije sa bazom podataka specifične kompanije
   return createClient(DATABASE_CONFIGS[companyId].connectionString);
 };
 ```
@@ -129,7 +132,7 @@ interface CompanyLicense {
 
 ### 💰 BILLING & PAYMENT SYSTEM
 
-#### **Web Portal za Billing** - `apps/web/src/app/billing/`
+#### **Web Portal za Billing** - `apps/web/src/app/billing/` (Planirano za buduću web aplikaciju u monorepo strukturi)
 
 ```typescript
 // Billing Dashboard komponente
@@ -149,7 +152,7 @@ interface BillingComponents {
   PlanComparison: {
     plans: SubscriptionPlan[];
     currentPlan: string;
-    upgradeOptions: PlanUpgrade[];
+    toUpgradeOptions: PlanUpgrade[];
   };
   
   // 3. Usage Monitoring
@@ -228,40 +231,41 @@ const checkCompanyAccess = async (companyId: string) => {
 ```
 
 ### 🚀 IMPLEMENTATION ROADMAP
+*Napomena: Ovaj roadmap predstavlja faze implementacije sistema licenciranja i pretplata, koje su planirane za budućnost, nakon stabilizacije osnovnih funkcionalnosti aplikacije.*
 
-#### **Phase 1: Database Architecture** (Sedmica 1-2)
-1. ✅ Kreirati company_id kolone u svim tabelama
-2. ✅ Implementirati RLS policies
-3. ✅ Migration script za postojeće podatke
-4. ✅ Testing multi-tenant pristupa
+#### **Phase 1: Database Architecture**
+1. ❌ Kreirati company_id kolone u svim tabelama
+2. ❌ Implementirati RLS policies
+3. ❌ Migration script za postojeće podatke
+4. ❌ Testing multi-tenant pristupa
 
-#### **Phase 2: Subscription Management** (Sedmica 3-4)  
-1. ✅ Kreirati subscription tabele
-2. ✅ Implementirati plan limits
-3. ✅ Feature toggle sistem
-4. ✅ Usage tracking
+#### **Phase 2: Subscription Management**
+1. ❌ Kreirati subscription tabele
+2. ❌ Implementirati plan limits
+3. ❌ Feature toggle sistem
+4. ❌ Usage tracking
 
-#### **Phase 3: Billing Portal** (Sedmica 5-6)
-1. ✅ Web billing dashboard
-2. ✅ Stripe integration
-3. ✅ Payment method management
-4. ✅ Invoice generation
+#### **Phase 3: Billing Portal**
+1. ❌ Web billing dashboard
+2. ❌ Stripe integration
+3. ❌ Payment method management
+4. ❌ Invoice generation
 
-#### **Phase 4: Grace Periods & Trials** (Sedmica 7-8)
-1. ✅ Trial signup flow
-2. ✅ Grace period logic
-3. ✅ Access restrictions
-4. ✅ Automated notifications
+#### **Phase 4: Grace Periods & Trials**
+1. ❌ Trial signup flow
+2. ❌ Grace period logic
+3. ❌ Access restrictions
+4. ❌ Automated notifications
 
-#### **Phase 5: Advanced Features** (Sedmica 9-10)
-1. ✅ Usage analytics dashboard
-2. ✅ Automated plan upgrades
-3. ✅ White-label options
-4. ✅ API rate limiting
+#### **Phase 5: Advanced Features**
+1. ❌ Usage analytics dashboard
+2. ❌ Automated plan upgrades
+3. ❌ White-label options
+4. ❌ API rate limiting
 
 ### 💡 KEY DECISIONS MADE
 
-1. **✅ Separate Database per Company** - Bolja izolacija i performance
+1. **✅ Shared Database + RLS** - Bolja izolacija i performanse za inicijalnu fazu. (Odluka promenjena u odnosu na originalni plan za 'Separate Database')
 2. **✅ Stripe za Payment Processing** - Pouzdano i globalno prihvaćeno
 3. **✅ 7-dnevni Grace Period** - Balans između korisnosti i rizika
 4. **✅ Web Portal za Billing** - Bolje UX za administratore

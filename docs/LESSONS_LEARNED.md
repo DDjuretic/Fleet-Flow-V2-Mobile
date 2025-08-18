@@ -1,5 +1,7 @@
 # 📚 LESSONS LEARNED - Fleet Flow Development
 
+*Ovaj dokument sumira ključne greške i lekcije naučene tokom prethodnog razvojnog ciklusa, koje su ultimativno dovele do odluke o potpunom "novom početku" projekta. Za detalje o novoj strategiji i planu implementacije, pogledajte [docs/cursor_duboka_analiza_mobilne_aplikacij.md](./cursor_duboka_analiza_mobilne_aplikacij.md) i [docs/planning/PUTNI_NALOG_IMPLEMENTATION_PLAN.md](./planning/PUTNI_NALOG_IMPLEMENTATION_PLAN.md).*
+
 **Kreiran:** 2025-01-22  
 **Svrha:** Dokumentacija grešaka i lekcija naučenih tokom development procesa
 
@@ -203,30 +205,6 @@ USING (auth.uid() = user_id);
 # Dodali NativeWind
 # Downgrade React
 # = 20+ fajlova promenjeno za 1 problem
-```
-
----
-
-## 🎯 **RECOVERY PLAN**
-
-### **Trenutno stanje:**
-- Aplikacija ne radi zbog dependency konflikata
-- Previše promena odjednom
-- Izgubljen fokus na originalnom problemu
-
-### **Recovery steps:**
-```bash
-# 1. Rollback na funkcionalno stanje
-git reset --hard 40f73db
-
-# 2. Fokusiran fix za Edit Profile
-# - Popraviti RLS policy
-# - Testirati
-# - Commit
-
-# 3. Gradualno dodavanje korisnih feature-a
-# - Jedan po jedan iz backup branch-a
-# - Testirati posle svakog
 ```
 
 ---

@@ -1,61 +1,67 @@
-# Fleet Flow Next Gen - Web vs Mobile Aplikacija - Detaljno Poređenje
+# Fleet Flow - Web vs Mobile Analysis (Historical)
 
-## 📊 Opšti pregled
-
-**Web aplikacija** i **Mobilna aplikacija** su **potpuno integrisane i funkcionalne platforme** za upravljanje flotom vozila, svaka prilagođena specifičnim korisničkim potrebama.
-
-- **Web**: Admin/monitoring dashboard za centralizovani pregled i upravljanje
-- **Mobilna**: Operativna aplikacija za svakodnevno korišćenje vozača i zaposlenih
+*Ovaj dokument predstavlja prethodnu analizu i status poređenja web i mobilnih aplikacija, kreiranu pre odluke o "novom početku" i detaljnog planiranja integracije `Putnog Naloga`. Statusi funkcionalnosti odražavaju stanje u prošlosti. Za najdetaljniji i najažurniji plan razvoja i status, molimo vas da pogledate:*
+*   **`docs/planning/PUTNI_NALOG_IMPLEMENTATION_PLAN.md`**
+*   **`docs/planning/PROJECT_BLUEPRINT.md`**
 
 ---
 
-## 🚀 IMPLEMENTIRANE FUNKCIONALNOSTI
+## 📊 Opšti pregled (Prethodni)
 
-### ✅ POTPUNO IMPLEMENTIRANE (Obe aplikacije)
+**Web aplikacija** i **Mobilna aplikacija** su u prethodnoj iteraciji projekta bile **zamišljene kao potpuno integrisane i funkcionalne platforme** za upravljanje flotom vozila, svaka prilagođena specifičnim korisničkim potrebama.
+
+- **Web**: Admin/monitoring dashboard za centralizovani pregled i upravljanje (prethodno zamišljeno)
+- **Mobilna**: Operativna aplikacija za svakodnevno korišćenje vozača i zaposlenih (prethodno zamišljeno)
+
+---
+
+## 🚀 IMPLEMENTIRANE FUNKCIONALNOSTI (ISTORIJSKI STATUS)
+
+### ✅ POTPUNO IMPLEMENTIRANE (Obe aplikacije - Prethodno zamišljeno)
 
 #### 1. **Authentication & Authorization**
-- **Web**: ✅ Kompletan authentication sistem
+- **Web**: ✅ Kompletan authentication sistem (prethodno)
   - Login/logout funkcionalnost
   - Role-based access control
   - Session management
   - Autentifikacija svih API poziva
-- **Mobile**: ✅ Identičan authentication sistem
+- **Mobile**: ✅ Identičan authentication sistem (prethodno)
 
 #### 2. **Dashboard/Overview**
-- **Web**: ✅ Real-time statistike, charts, fleet overview
-- **Mobile**: ✅ Personalizovani dashboard sa quick actions
+- **Web**: ✅ Real-time statistike, charts, fleet overview (prethodno)
+- **Mobile**: ✅ Personalizovani dashboard sa quick actions (prethodno)
 
 #### 3. **Vehicle Management**
-- **Web**: ✅ Kompletne CRUD operacije, bulk actions, vehicle details
-- **Mobile**: ✅ Vehicle listing, detailed info, status tracking
+- **Web**: ✅ Kompletne CRUD operacije, bulk actions, vehicle details (prethodno)
+- **Mobile**: ✅ Vehicle listing, detailed info, status tracking (prethodno)
 
 #### 4. **Trip Management**
-- **Web**: ✅ Kompletne CRUD operacije, monitoring
-- **Mobile**: ✅ Start/stop trips, GPS tracking
+- **Web**: ✅ Kompletne CRUD operacije, monitoring (prethodno)
+- **Mobile**: ✅ Start/stop trips, GPS tracking (prethodno)
 
 #### 5. **Expense Management**
-- **Web**: ✅ Potpuno implementirano - Add/Edit/View expenses
-- **Mobile**: ✅ Kompletne expense operacije sa kategorijama
+- **Web**: ✅ Potpuno implementirano - Add/Edit/View expenses (prethodno)
+- **Mobile**: ✅ Kompletne expense operacije sa kategorijama (prethodno)
 
 #### 6. **User Management**
-- **Web**: ✅ Admin CRUD operacije za sve korisnike
-- **Mobile**: ✅ User profile management, personal settings
+- **Web**: ✅ Admin CRUD operacije za sve korisnike (prethodno)
+- **Mobile**: ✅ User profile management, personal settings (prethodno)
 
 #### 7. **Reservations**
-- **Web**: ✅ Admin approval/rejection sistema
-- **Mobile**: ✅ User request system za rezervacije
+- **Web**: ✅ Admin approval/rejection sistema (prethodno)
+- **Mobile**: ✅ User request system za rezervacije (prethodno)
 
 #### 8. **Reminders**
-- **Web**: ✅ CRUD operacije za admin
-- **Mobile**: ✅ Personal reminders system
+- **Web**: ✅ CRUD operacije za admin (prethodno)
+- **Mobile**: ✅ Personal reminders system (prethodno)
 
 #### 9. **Map & GPS Tracking**
-- **Web**: ✅ Real-time vehicle tracking na mapi
-- **Mobile**: ✅ GPS tracking tokom vožnje, live location
+- **Web**: ✅ Real-time vehicle tracking na mapi (prethodno)
+- **Mobile**: ✅ GPS tracking tokom vožnje, live location (prethodno)
 
 ---
 
-## 🔧 TEHNIČKA ARHITEKTURA
+## 🔧 TEHNIČKA ARHITEKTURA (PRETHODNI PREGLED)
 
 ### Web Aplikacija
 ```typescript
@@ -84,7 +90,7 @@ Technology Stack:
 
 ---
 
-## 📱 JEDINSTVENE KARAKTERISTIKE
+## 📱 JEDINSTVENE KARAKTERISTIKE (PRETHODNI PREGLED)
 
 ### Web Aplikacija Specifičnosti
 1. **Bulk Operations**
@@ -118,38 +124,38 @@ Technology Stack:
 
 ---
 
-## 📈 IMPLEMENTACIONE STATISTIKE
+## 📈 IMPLEMENTACIONE STATISTIKE (ISTORIJSKI PREGLED)
 
-| Funkcionalnost | Web Status | Mobile Status | Napomena |
+| Funkcionalnost | Web Status | Mobile Status | Napomena (Prethodno) |
 |---|---|---|---|
-| Authentication | ✅ (100%) | ✅ (100%) | Potpuno implementirano |
-| Dashboard | ✅ (100%) | ✅ (100%) | Real-time statistike |
-| Vehicles | ✅ (100%) | ✅ (100%) | Kompletan CRUD |
-| Trips | ✅ (100%) | ✅ (100%) | GPS tracking |
-| Expenses | ✅ (100%) | ✅ (100%) | Kategorije, status |
-| Reservations | ✅ (100%) | ✅ (100%) | Approval workflow |
-| Users | ✅ (100%) | ✅ (100%) | Profil management |
-| Reminders | ✅ (100%) | ✅ (100%) | Personalizacija |
-| Maps | ✅ (100%) | ✅ (100%) | Live tracking |
-| Settings | ✅ (100%) | ✅ (100%) | Konfigurabilnost |
+| Authentication | ✅ (100%) | ✅ (100%) | Smatrano potpuno implementiranim |
+| Dashboard | ✅ (100%) | ✅ (100%) | Real-time statistike, smatrano kompletno |
+| Vehicles | ✅ (100%) | ✅ (100%) | Smatrano kompletnim CRUD-om |
+| Trips | ✅ (100%) | ✅ (100%) | GPS tracking, smatrano kompletno |
+| Expenses | ✅ (100%) | ✅ (100%) | Kategorije, status, smatrano kompletno |
+| Reservations | ✅ (100%) | ✅ (100%) | Approval workflow, smatrano kompletno |
+| Users | ✅ (100%) | ✅ (100%) | Profil management, smatrano kompletno |
+| Reminders | ✅ (100%) | ✅ (100%) | Personalizacija, smatrano kompletno |
+| Maps | ✅ (100%) | ✅ (100%) | Live tracking, smatrano kompletno |
+| Settings | ✅ (100%) | ✅ (100%) | Konfigurabilnost, smatrano kompletno |
 
 ---
 
-## 🎯 ZAKLJUČAK
+## 🎯 ZAKLJUČAK (ISTORIJSKI)
 
-**Fleet Flow Next Gen** je **potpuno funkcionalana platforma** za upravljanje flotom vozila, sa **identičnim core funkcionalnostima** na webu i mobilnoj aplikaciji.
+**Fleet Flow Next Gen** je u ovom trenutku (pre "novog početka" projekta) bila **zamišljena kao potpuno funkcionalna platforma** za upravljanje flotom vozila, sa **identičnim core funkcionalnostima** na webu i mobilnoj aplikaciji.
 
-**Ključne prednosti:**
+**Ključne prednosti (istorijski):**
 - Konzistentnost između platformi
 - Kompletan authentication sistem
 - Real-time sinhronizacija
 - Visok nivo prilagodljivosti
 - Jednostavnost korišćenja
 
-**Preporuke za dalje unapređenje:**
+**Preporuke za dalje unapređenje (istorijski):**
 1. Implementacija naprednih izveštaja
 2. Proširenje analytics funkcionalnosti
 3. Dodavanje mašinskog učenja za prediktivno održavanje
 4. Implementacija još naprednijih offline mogućnosti
 
-**Current Status**: 🟢 **Production Ready** 
+**Current Status (Historical)**: 🟢 **Production Ready** (Ovo je bio cilj ili procena u tom trenutku, ali ne odražava trenutno stanje projekta.) 

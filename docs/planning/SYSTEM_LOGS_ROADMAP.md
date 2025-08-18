@@ -1,39 +1,41 @@
 # System Logs & Monitoring - Roadmap i Sledeći Koraci
 
-## 🎯 Trenutno stanje (✅ Završeno)
+## 🎯 Prethodno stanje (Istorijski pregled / Budući planovi)
+
+*Ova sekcija prikazuje funkcionalnosti `System Logs & Monitoring` koje su bile implementirane ili planirane u prethodnoj iteraciji projekta. Trenutno, implementacija ovih funkcionalnosti je planirana za kasniju fazu razvoja, nakon stabilizacije osnovnih modula i integracije `Putnog Naloga` (vidi `PUTNI_NALOG_IMPLEMENTATION_PLAN.md`).*
 
 ### Database & API Infrastructure
-- ✅ `system_logs` tabela kreirana sa kompletnim schema
-- ✅ API endpoints implementirani (CRUD operacije)
-- ✅ RLS policies konfigurisane
-- ✅ Test podaci kreirani (10 expenses, 10 system logs)
-- ✅ Automatsko kreiranje logs-a za vehicle creation
-- ✅ Notifikacije za HIGH/CRITICAL alerts
+- `system_logs` tabela kreirana sa kompletnim schema (prethodno)
+- API endpoints implementirani (CRUD operacije, prethodno)
+- RLS policies konfigurisane (prethodno)
+- Test podaci kreirani (prethodno)
+- Automatsko kreiranje logs-a za vehicle creation (prethodno)
+- Notifikacije za HIGH/CRITICAL alerts (prethodno)
 
 ### Frontend Integration  
-- ✅ `SystemLogsAndMonitoringScreen.tsx` funkcionalan
-- ✅ Filter opcije (severity, type, status)
-- ✅ Resolve functionality
-- ✅ Metadata display
-- ✅ Admin Panel integracija
+- `src/screens/admin/SystemLogsAndMonitoringScreen.tsx` funkcionalan (prethodno)
+- Filter opcije (severity, type, status, prethodno)
+- Resolve functionality (prethodno)
+- Metadata display (prethodno)
+- Admin Panel integracija (prethodno)
 
-### Monitoring Types Implemented
-- ✅ HIGH_EXPENSE detection (fuel >€200, meals >€100)
-- ✅ SUSPICIOUS_PATTERN detection (multiple same-day expenses)
-- ✅ FUEL_EXCESS monitoring (consumption analysis)
-- ✅ MAINTENANCE_DUE alerts (service intervals)
-- ✅ SECURITY_ALERT system (unauthorized access)
-- ✅ SYSTEM_EVENT logging (vehicle creation, etc.)
+### Monitoring Types Implemented (Prethodno)
+- HIGH_EXPENSE detection (fuel >€200, meals >€100)
+- SUSPICIOUS_PATTERN detection (multiple same-day expenses)
+- FUEL_EXCESS monitoring (consumption analysis)
+- MAINTENANCE_DUE alerts (service intervals)
+- SECURITY_ALERT system (unauthorized access)
+- SYSTEM_EVENT logging (vehicle creation, etc.)
 
 ---
 
-## 🚀 Phase 1: Enhanced Monitoring Logic (Prioritet: HIGH)
+## 🚀 Phase 1: Enhanced Monitoring Logic (Prioritet: HIGH - Planirano za budućnost)
 
 ### 1.1 Advanced Expense Analysis
-**Deadline: 2 nedelje**
+**Deadline: 2 nedelje (Planirano)**
 
 ```typescript
-// Implementirati u NewAddExpenseScreen.tsx
+// Implementirati u src/screens/expenses/AddExpenseScreen.tsx ili slično
 const enhancedExpenseMonitoring = {
   // Dinamički thresholds na osnovu istorije
   dynamicThresholds: {
@@ -52,13 +54,13 @@ const enhancedExpenseMonitoring = {
 }
 ```
 
-**Fajlovi za ažuriranje:**
-- `apps/mobile/src/screens/expenses/NewAddExpenseScreen.tsx`
-- `apps/mobile/src/store/api/supabaseApi.ts` (createExpense endpoint)
-- `apps/mobile/src/utils/expenseMonitoring.ts` (novi fajl)
+**Fajlovi za ažuriranje (planirano):**
+- `src/screens/expenses/AddExpenseScreen.tsx`
+- `src/store/api/supabaseApi.ts` (createExpense endpoint)
+- `src/utils/expenseMonitoring.ts` (novi fajl)
 
 ### 1.2 Vehicle Performance Monitoring
-**Deadline: 3 nedelje**
+**Deadline: 3 nedelje (Planirano)**
 
 ```sql
 -- Kreirati novu tabelu za vehicle metrics
@@ -73,14 +75,14 @@ CREATE TABLE vehicle_performance_logs (
 );
 ```
 
-**Implementirati:**
+**Implementirati (planirano):**
 - Fuel efficiency tracking (L/100km vs očekivano)
 - Maintenance cost trends
 - Usage pattern analysis (km/day, trips/week)
 - Automatic alerts za performance degradation
 
 ### 1.3 User Behavior Analytics
-**Deadline: 2 nedelje**
+**Deadline: 2 nedelje (Planirano)**
 
 ```typescript
 // Dodati u user activity tracking
@@ -101,17 +103,17 @@ const userBehaviorMonitoring = {
 
 ---
 
-## 🤖 Phase 2: Machine Learning Integration (Prioritet: MEDIUM)
+## 🤖 Phase 2: Machine Learning Integration (Prioritet: MEDIUM - Konceptualni plan)
 
 ### 2.1 Anomaly Detection Engine
-**Deadline: 1 mesec**
+**Deadline: 1 mesec (Planirano)**
 
-**Tehnologije:**
-- Python backend service
+**Tehnologije (konceptualno):**
+- Python backend service (za ML modele)
 - scikit-learn za anomaly detection
 - PostgreSQL integration
 
-**Algoritmi za implementaciju:**
+**Algoritmi za implementaciju (konceptualno):**
 ```python
 # Isolation Forest za expense anomalies
 from sklearn.ensemble import IsolationForest
@@ -123,14 +125,14 @@ from tensorflow.keras.models import Sequential
 from sklearn.cluster import DBSCAN
 ```
 
-**Features za analizu:**
+**Features za analizu (planirano):**
 - Expense amount, frequency, timing
 - Vehicle usage patterns
 - User login behaviors
 - Seasonal trends
 
 ### 2.2 Predictive Analytics
-**Deadline: 6 nedelja**
+**Deadline: 6 nedelja (Planirano)**
 
 ```typescript
 // API endpoints za predictions
@@ -142,7 +144,7 @@ const predictiveEndpoints = {
 }
 ```
 
-**Dashboard komponente:**
+**Dashboard komponente (planirano):**
 - Maintenance prediction charts
 - Budget forecast widgets
 - Risk assessment indicators
@@ -150,10 +152,10 @@ const predictiveEndpoints = {
 
 ---
 
-## 🔗 Phase 3: External Integrations (Prioritet: MEDIUM)
+## 🔗 Phase 3: External Integrations (Prioritet: MEDIUM - Planirano za budućnost)
 
 ### 3.1 Payment System Integration
-**Deadline: 3 nedelje**
+**Deadline: 3 nedelje (Planirano)**
 
 ```typescript
 // Integration sa payment providers
@@ -173,7 +175,7 @@ const paymentIntegrations = {
 ```
 
 ### 3.2 GPS/Telematics Integration
-**Deadline: 4 nedelje**
+**Deadline: 4 nedelje (Planirano)**
 
 ```typescript
 // Real-time vehicle tracking
@@ -194,19 +196,19 @@ const telematicsIntegration = {
 
 ---
 
-## 📱 Phase 4: Mobile & Notification Enhancements (Prioritet: HIGH)
+## 📱 Phase 4: Mobile & Notification Enhancements (Prioritet: HIGH - Planirano za budućnost)
 
 ### 4.1 Push Notifications
-**Deadline: 2 nedelje**
+**Deadline: 2 nedelje (Planirano)**
 
-**Implementirati:**
+**Implementirati (planirano):**
 - Expo Notifications setup
 - Real-time alerts za CRITICAL/HIGH severity
 - Personalized notification preferences
 - Batch notifications za daily/weekly summaries
 
 ```typescript
-// apps/mobile/src/services/notificationService.ts
+// src/services/notificationService.ts (planirano)
 const enhancedNotifications = {
   realTime: {
     criticalAlerts: sendImmediateNotification(),
@@ -223,7 +225,7 @@ const enhancedNotifications = {
 ```
 
 ### 4.2 Offline Capability
-**Deadline: 3 nedelje**
+**Deadline: 3 nedelje (Planirano)**
 
 ```typescript
 // Offline system logs storage
@@ -238,14 +240,14 @@ const offlineCapability = {
 
 ---
 
-## 📊 Phase 5: Advanced Reporting & Analytics (Prioritet: MEDIUM)
+## 📊 Phase 5: Advanced Reporting & Analytics (Prioritet: MEDIUM - Planirano za budućnost)
 
 ### 5.1 Executive Dashboard
-**Deadline: 4 nedelje**
+**Deadline: 4 nedelje (Planirano)**
 
-**Web aplikacija komponente:**
+**Web aplikacija komponente (planirano):**
 ```typescript
-// apps/web/src/components/dashboard/
+// src/components/dashboard/ (planirano)
 const executiveDashboard = {
   kpiMetrics: {
     costPerKm: calculateFleetEfficiency(),
@@ -262,7 +264,7 @@ const executiveDashboard = {
 ```
 
 ### 5.2 Automated Reporting
-**Deadline: 3 nedelje**
+**Deadline: 3 nedelje (Planirano)**
 
 ```typescript
 // Scheduled report generation
@@ -289,10 +291,10 @@ const automatedReports = {
 
 ---
 
-## 🔒 Phase 6: Security & Compliance Enhancements (Prioritet: HIGH)
+## 🔒 Phase 6: Security & Compliance Enhancements (Prioritet: HIGH - Planirano za budućnost)
 
 ### 6.1 Advanced Security Monitoring
-**Deadline: 3 nedelje**
+**Deadline: 3 nedelje (Planirano)**
 
 ```typescript
 const securityEnhancements = {
@@ -311,7 +313,7 @@ const securityEnhancements = {
 ```
 
 ### 6.2 Data Privacy & Retention
-**Deadline: 2 nedelje**
+**Deadline: 2 nedelje (Planirano)**
 
 ```sql
 -- Implementirati data retention policies
@@ -334,10 +336,10 @@ $$ LANGUAGE plpgsql;
 
 ---
 
-## 🧪 Phase 7: Testing & Quality Assurance (Prioritet: HIGH)
+## 🧪 Phase 7: Testing & Quality Assurance (Prioritet: HIGH - Planirano za budućnost)
 
 ### 7.1 Automated Testing Suite
-**Deadline: 2 nedelje**
+**Deadline: 2 nedelje (Planirano)**
 
 ```typescript
 // Test suites za implementaciju
@@ -363,7 +365,7 @@ const testingSuite = {
 ```
 
 ### 7.2 Performance Testing
-**Deadline: 1 nedelja**
+**Deadline: 1 nedelja (Planirano)**
 
 - Load testing sa 1000+ concurrent users
 - Database performance sa 100k+ logs

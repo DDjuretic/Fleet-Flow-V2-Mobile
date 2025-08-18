@@ -1,19 +1,19 @@
-U redu, razumem. Prilagodićemo plan implementacije tako da se fokusira na paralelni razvoj web i mobilne aplikacije, dok će se razvoj za Android Auto i Apple CarPlay odložiti za kasniju fazu, nakon što ključne funkcionalnosti na webu i mobilnoj aplikaciji budu stabilne i operativne.
+# Fleet Flow - Old Implementation Plan (Historical)
 
-Ovo je logičan pristup, jer Android Auto/CarPlay funkcionalnosti u suštini proširuju već postojeće funkcionalnosti mobilne aplikacije. Stoga je važno da te osnovne mobilne funkcionalnosti prvo budu robustne.
-
-**Napomena o Pristupu Razvoju:** Kroz sve faze, težićemo iterativnom razvoju u manjim koracima, sa fokusom na modularnost koda kako bismo olakšali testiranje, održavanje i buduće nadogradnje. Redovno ćemo čistiti kod od grešaka pre uvođenja novih velikih funkcionalnosti i osigurati da je dizajn sistema fleksibilan za buduće proširenje.
+*Ovaj dokument predstavlja prethodni plan implementacije i status projekta, kreiran pre odluke o "novom početku" i detaljnog planiranja integracije `Putnog Naloga`. Za najdetaljniji i najažurniji plan razvoja, molimo vas da pogledate:*
+*   **`docs/planning/PUTNI_NALOG_IMPLEMENTATION_PLAN.md`**
+*   **`docs/planning/PROJECT_BLUEPRINT.md`**
 
 ---
 
-# Plan Implementacije - Fleet Flow Next Gen
+# Implementacija - Prethodno Stanje
 
-**Datum:** 2025-06-22 (Update 9 - SYSTEM LOGS & MONITORING IMPLEMENTED)
-**Status:** FAZA 4 - Enhanced Monitoring & ML Integration 🚀
+**Datum:** 2025-06-22 (Istorijski podaci)
+**Status:** Istorijski prikaz prethodnih faza razvoja.
 
-## 🌐 WEB APLIKACIJA - TRENUTNI STATUS
+## 🌐 WEB APLIKACIJA - PRETHODNI STATUS
 
-### ✅ KOMPLETNO IMPLEMENTIRANO
+### ✅ KOMPLETNO IMPLEMENTIRANO (PRETHODNI CILJEVI)
 
 #### 1. **Dashboard**
 - Real-time statistike vozila, putovanja, troškova
@@ -23,7 +23,7 @@ Ovo je logičan pristup, jer Android Auto/CarPlay funkcionalnosti u suštini pro
 - Responsive dizajn
 - Integrisani grafici sa Recharts
 
-#### 2. **System Logs & Monitoring** ⭐ NOVO
+#### 2. **System Logs & Monitoring**
 - Kompletna `system_logs` tabela sa RLS policies
 - Real-time expense anomaly detection (HIGH_EXPENSE >€200/€100)
 - Suspicious pattern detection (multiple same-day expenses)
@@ -65,7 +65,7 @@ Ovo je logičan pristup, jer Android Auto/CarPlay funkcionalnosti u suštini pro
 - Konzistentni UI/UX
 - Form state management sa React Hook Form
 
-### 🚧 U TOKU
+### 🚧 U TOKU (PRETHODNI CILJEVI)
 
 #### Aktivne Implementacije - FAZA 4: Enhanced Monitoring
 - Advanced expense analysis sa dinamičkim thresholds
@@ -74,7 +74,7 @@ Ovo je logičan pristup, jer Android Auto/CarPlay funkcionalnosti u suštini pro
 - Push notifications setup za mobile aplikaciju
 - Predictive analytics komponente za dashboard
 
-### 📊 METRIJE
+### 📊 METRIJE (PRETHODNI STATUS)
 
 **Implementirano:** 95%
 - Dashboard: 95% ✅
@@ -86,7 +86,7 @@ Ovo je logičan pristup, jer Android Auto/CarPlay funkcionalnosti u suštini pro
 - Vehicle Management: 90% ✅
 - User Management: 85% ✅
 
-### 🔜 SLEDEĆI KORACI - FAZA 4 & 5
+### 🔜 SLEDEĆI KORACI (PRETHODNI PLANOVI)
 
 1. **Enhanced Monitoring Logic (HIGH Priority - 2-3 nedelje)**
    - Dinamički expense thresholds na osnovu user history
@@ -112,7 +112,7 @@ Ovo je logičan pristup, jer Android Auto/CarPlay funkcionalnosti u suštini pro
    - Advanced data visualization sa Recharts
    - Export functionality enhancement
 
-### 🛠 TEHNIČKI DETALJI
+### 🛠 TEHNIČKI DETALJI (PRETHODNI STEK)
 
 **Tehnologije:**
 - Next.js 15
@@ -133,11 +133,13 @@ Ovo je logičan pristup, jer Android Auto/CarPlay funkcionalnosti u suštini pro
 
 ---
 
-**ZAKLJUČAK**: Web aplikacija je u finalnoj fazi implementacije, sa visokim procentom kompletnosti i spremna za produkciono testiranje.
+**ZAKLJUČAK**: Ovaj dokument prikazuje planove i status pre "novog početka" projekta. Za trenutni status i buduće planove, pogledajte `PUTNI_NALOG_IMPLEMENTATION_PLAN.md`.
 
 ---
 
-## FAZA 2: KOMPLETNO ZAVRŠENO ✅
+## MOBILE - PRETHODNI STATUS (FAZA 2: KOMPLETNO ZAVRŠENO ✅)
+
+*Mobilna aplikacija je u ovom trenutku (pre "novog početka") bila praktično završena za core funkcionalnosti. Međutim, dalja analiza je pokazala potrebu za sveobuhvatnim restartom.* 
 
 ### 2.1 Redux State Management ✅ (100% ZAVRŠENO)
 - [x] **RTK Query Setup**: Kompletan sa supabaseApi.ts
@@ -166,102 +168,104 @@ Ovo je logičan pristup, jer Android Auto/CarPlay funkcionalnosti u suštini pro
 
 ---
 
-## SLEDEĆI KORACI - WEB APLIKACIJA PRIORITET
+## SLEDEĆI KORACI (PRETHODNI PLAN) - WEB APLIKACIJA PRIORITET
 
-### **FAZA 3: WEB APLIKACIJA DEVELOPMENT** (SLEDEĆE 4-6 NEDELJA)
+### **FAZA 3: WEB APLIKACIJA DEVELOPMENT**
 
-Prema **Web_Development_Plan.md**, web aplikacija je sada kritičan sledeći korak:
+Prema **Web_Development_Plan.md**, web aplikacija je u tom trenutku bila kritičan sledeći korak:
 
 #### **Week 1-2: Web Setup & Core Admin**
-1. **Next.js Project Cleanup** - Shadcn/ui setup
-2. **Supabase Integration** - Shared instance sa mobile
-3. **User Management Dashboard** - CRUD, role assignment
-4. **Fleet Management** - Vehicle CRUD, status management
+1. Next.js Project Setup & Cleanup
+2. Shadcn/ui integration
+3. Supabase Web Client
+4. User Management Dashboard
 
-#### **Week 3-4: Approval Workflows & Analytics**
-1. **Reservation Approvals** - Bulk operations, calendar view
-2. **Expense Approvals** - Receipt viewer, workflow
-3. **Reporting Dashboard** - Charts, metrics, export
+#### **Week 3-4: Core Web Features** 
+1. Fleet Management Interface
+2. Approval Workflows UI
+3. Bulk Operations
+4. Reporting Dashboard
 
-#### **Week 5-6: Advanced Features**
-1. **System Configuration** - Global settings, integrations
-2. **Data Management** - CSV import/export, bulk operations
-3. **Production Deployment** - Vercel setup
+#### **Week 5-6: Advanced & Deployment**
+1. Advanced Analytics
+2. System Configuration
+3. Production Deployment
+4. Documentation Finalization
 
 ---
 
-## MOBILE - FINAL TOUCHES (1-2 NEDELJE PARALELNO)
+## MOBILE - FINAL TOUCHES (PRETHODNI PLAN)
 
 ### **Poslednji Detalji za Mobile:**
-1. **Finalizacija Formi** - Add/Edit screens za sve module
-2. **Testing & Bug Fixes** - End-to-end testing
-3. **Performance Optimization** - Memory leaks, optimizacija
-4. **Documentation** - User guide, technical docs
+1. Finalizacija Formi - Add/Edit screens za sve module
+2. Testing & Bug Fixes - End-to-end testing
+3. Performance Optimization - Memory leaks, optimizacija
+4. Documentation - User guide, technical docs
 
 ---
 
-## TEHNIČKI STEK - FINALIZIRANO
+## TEHNIČKI STEK - FINALIZIRANO (PRETHODNI)
 
-### **Mobilna Aplikacija** ✅
+### **Mobilna Aplikacija**
 - **Framework**: React Native + Expo SDK 52
 - **Navigation**: React Navigation v6
-- **State**: Redux Toolkit + RTK Query ✅
-- **Backend**: Supabase (local dev, cloud za produkciju) ✅
-- **Database**: PostgreSQL ✅
-- **Auth**: Supabase Auth ✅
-- **UI**: Custom components + Ionicons + MaterialCommunityIcons ✅
-- **Notifications**: Expo Notifications ✅
-- **Language**: TypeScript ✅
+- **State**: Redux Toolkit + RTK Query
+- **Backend**: Supabase (local dev, cloud za produkciju)
+- **Database**: PostgreSQL
+- **Auth**: Supabase Auth
+- **UI**: Custom components + Ionicons + MaterialCommunityIcons
+- **Notifications**: Expo Notifications
+- **Language**: TypeScript
 
-### **Web Aplikacija** (Sledeće)
-- **Framework**: Next.js 15 ✅
+### **Web Aplikacija**
+- **Framework**: Next.js 15
 - **Styling**: Tailwind CSS + Shadcn/ui
 - **State**: Redux Toolkit + RTK Query (shared)
-- **Backend**: Shared Supabase instance ✅
+- **Backend**: Shared Supabase instance
 - **Charts**: Recharts
 - **Tables**: TanStack Table
 
 ---
 
-## METRIJE NAPRETKA - FINALNO STANJE
+## METRIJE NAPRETKA - FINALNO STANJE (PRETHODNO)
 
 ### **Navigation & Screens: 100% ✅**
-- Tab Navigator (4 taba) + Stack za ostale ✅
-- Svi definisani ekrani postoje i funkcionalni su ✅  
-- Real data za sve liste ✅
-- Tamna tema primenjena na sve ekrane ✅
-- Type safety kompletno implementiran ✅
+- Tab Navigator (4 taba) + Stack za ostale
+- Svi definisani ekrani postoje i funkcionalni su
+- Real data za sve liste
+- Tamna tema primenjena na sve ekrane
+- Type safety kompletno implementiran
 
 ### **Data Layer: 100% ✅**
-- Supabase connection ✅
-- Auth working (login, session management) ✅
-- Schema implementiran sa RLS ✅
-- RTK Query API kompletno implementiran ✅
+- Supabase connection
+- Auth working (login, session management)
+- Schema implementiran sa RLS
+- RTK Query API kompletno implementiran
 
 ### **State Management: 100% ✅**
-- Redux Toolkit setup ✅
-- RTK Query implementiran ✅
-- Redux Persist configuration ✅
-- Theme management ✅
-- Settings persistence ✅
+- Redux Toolkit setup
+- RTK Query implementiran
+- Redux Persist configuration
+- Theme management
+- Settings persistence
 
 ### **Real-time Features: 50%**
-- Push notifications ✅
-- Approval workflow ✅
+- Push notifications
+- Approval workflow
 - GPS tracking pending (future)
 
 ### **Business Logic: 90%**
-- Trip management ✅
-- Expense tracking ✅
-- Reservation system ✅
-- Approval workflows ✅
-- Role-based permissions ✅
+- Trip management
+- Expense tracking
+- Reservation system
+- Approval workflows
+- Role-based permissions
 
-**ZAKLJUČAK**: Mobilna aplikacija je **praktično završena** za core funkcionalnosti. Web aplikacija je sledeći kritičan korak za potpunu funkcionalnost sistema.
+**ZAKLJUČAK**: Mobilna aplikacija je u ovom trenutku (pre "novog početka") bila **praktično završena** za core funkcionalnosti. Web aplikacija je bila sledeći kritičan korak za potpunu funkcionalnost sistema.
 
 ---
 
-**Prioritetni Plan za Sledeće 6 Nedelja:**
+**Prioritetni Plan za Sledeće 6 Nedelja (PRETHODNI):**
 
 ### **Nedelja 1-2: Web Development Početak**
 - Next.js project setup i cleanup
@@ -271,18 +275,18 @@ Prema **Web_Development_Plan.md**, web aplikacija je sada kritičan sledeći kor
 
 ### **Nedelja 3-4: Core Web Features** 
 - Fleet management interface
-- Approval workflows UI
-- Bulk operations
-- Reporting dashboard
+- Approval Workflows UI
+- Bulk Operations
+- Reporting Dashboard
 
 ### **Nedelja 5-6: Advanced & Deployment**
-- Advanced analytics
-- System configuration
-- Production deployment
-- Documentation finalization
+- Advanced Analytics
+- System Configuration
+- Production Deployment
+- Documentation Finalization
 
 ### **Paralelno - Mobile Finalization:**
-- Bug fixes i testing
-- Performance optimization
-- Final form implementations
-- User documentation 
+- Bug Fixes & Testing
+- Performance Optimization
+- Final Form Implementations
+- User Documentation 

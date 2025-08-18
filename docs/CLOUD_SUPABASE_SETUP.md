@@ -91,6 +91,7 @@ CORS origins:
 ```
 
 ### **Authentication Setup**
+*Za detaljnu konfiguraciju autentifikacije i rešavanje problema, pogledajte [Auth Management Guide](./AUTH_MANAGEMENT_GUIDE.md).*
 
 #### **1. Auth Providers**
 ```bash
@@ -152,8 +153,7 @@ npx supabase login
 npx supabase link --project-ref [staging-project-ref]
 
 # Generiši TypeScript tipove
-npx supabase gen types typescript --linked > apps/mobile/src/types/supabase-staging.ts
-npx supabase gen types typescript --linked > apps/web/src/types/supabase-staging.ts
+npx supabase gen types typescript --linked > src/types/supabase-staging.ts
 ```
 
 #### **2. Push Migracije**
@@ -177,69 +177,39 @@ npx supabase link --project-ref [production-project-ref]
 npx supabase db push
 
 # Generiši production tipove
-npx supabase gen types typescript --linked > apps/mobile/src/types/supabase-production.ts
-npx supabase gen types typescript --linked > apps/web/src/types/supabase-production.ts
+npx supabase gen types typescript --linked > src/types/supabase-production.ts
 ```
 
 ### **Row Level Security (RLS)**
 
 #### **1. Enable RLS na svim tabelama**
 ```sql
--- Omogući RLS na svim tabelama
-ALTER TABLE companies ENABLE ROW LEVEL SECURITY;
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE vehicles ENABLE ROW LEVEL SECURITY;
-ALTER TABLE trips ENABLE ROW LEVEL SECURITY;
-ALTER TABLE reservations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
-ALTER TABLE notifications ENABLE ROW LEVEL SECURITY;
-ALTER TABLE user_permissions ENABLE ROW LEVEL SECURITY;
-ALTER TABLE permission_levels ENABLE ROW LEVEL SECURITY;
-ALTER TABLE reminders ENABLE ROW LEVEL SECURITY;
-ALTER TABLE routes ENABLE ROW LEVEL SECURITY;
-ALTER TABLE locations ENABLE ROW LEVEL SECURITY;
-ALTER TABLE fuel_prices ENABLE ROW LEVEL SECURITY;
-ALTER TABLE maintenance_records ENABLE ROW LEVEL SECURITY;
+-- Omogući RLS na svim tabelama koje sadrže osetljive podatke specifične za kompaniju ili korisnika.
+-- Preporučuje se da se RLS omogući na svim tabelama, osim na javnim referentnim tabelama (npr. fuel_types, vehicle_types).
+-- Puni spisak tabela sa omogućenim RLS-om se nalazi u migracijskim skriptama.
 ```
 
 #### **2. Kreiraj RLS Policies**
 ```sql
--- Korisnici mogu videti samo svoju kompaniju
-CREATE POLICY "Users can only see their company data" ON companies
-    FOR ALL USING (id = (SELECT company_id FROM users WHERE auth.uid() = id));
-
--- Korisnici mogu videti samo sebe i kolege iz iste kompanije  
-CREATE POLICY "Users can see company colleagues" ON users
-    FOR ALL USING (company_id = (SELECT company_id FROM users WHERE auth.uid() = id));
-
--- Vozila - samo iz iste kompanije
-CREATE POLICY "Company vehicles only" ON vehicles
-    FOR ALL USING (company_id = (SELECT company_id FROM users WHERE auth.uid() = id));
-
--- Putovanja - samo iz iste kompanije
-CREATE POLICY "Company trips only" ON trips
-    FOR ALL USING (company_id = (SELECT company_id FROM users WHERE auth.uid() = id));
-
--- Rezervacije - samo iz iste kompanije
-CREATE POLICY "Company reservations only" ON reservations
-    FOR ALL USING (company_id = (SELECT company_id FROM users WHERE auth.uid() = id));
-
--- Troškovi - samo iz iste kompanije
-CREATE POLICY "Company expenses only" ON expenses
-    FOR ALL USING (company_id = (SELECT company_id FROM users WHERE auth.uid() = id));
+-- Kreirajte politike koje osiguravaju da korisnici mogu pristupiti samo podacima koji su u skladu sa njihovom ulogom i pripadnošću kompaniji.
+-- Primeri uobičajenih politika:
+-- - Korisnici mogu videti samo podatke iz svoje kompanije (npr. 'company_id = (SELECT company_id FROM users WHERE auth.uid() = id)').
+-- - Korisnici mogu videti samo svoje zapise (npr. 'user_id = auth.uid()').
+-- - Javni podaci dostupni svima ('true').
+-- Detaljne i ažurne RLS politike nalaze se u Supabase migracijskim datotekama (npr. 'supabase/migrations/001_complete_schema.sql' i novije migracije).
 ```
 
 ### **Environment Variables**
 
 #### **1. Staging Environment**
 ```bash
-# apps/mobile/.env.staging
+# .env.staging (ili drugi odgovarajući env fajl)
 EXPO_PUBLIC_SUPABASE_URL=https://[staging-project-ref].supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=[staging-anon-key]
 SUPABASE_SERVICE_ROLE_KEY=[staging-service-role-key]
 EXPO_PUBLIC_ENVIRONMENT=staging
 
-# apps/web/.env.staging
+# Web: (prilagodi putanje i prefikse)
 NEXT_PUBLIC_SUPABASE_URL=https://[staging-project-ref].supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[staging-anon-key]
 SUPABASE_SERVICE_ROLE_KEY=[staging-service-role-key]
@@ -248,13 +218,13 @@ NEXT_PUBLIC_ENVIRONMENT=staging
 
 #### **2. Production Environment**
 ```bash
-# apps/mobile/.env.production
+# .env.production (ili drugi odgovarajući env fajl)
 EXPO_PUBLIC_SUPABASE_URL=https://[production-project-ref].supabase.co
 EXPO_PUBLIC_SUPABASE_ANON_KEY=[production-anon-key]
 SUPABASE_SERVICE_ROLE_KEY=[production-service-role-key]
 EXPO_PUBLIC_ENVIRONMENT=production
 
-# apps/web/.env.production
+# Web: (prilagodi putanje i prefikse)
 NEXT_PUBLIC_SUPABASE_URL=https://[production-project-ref].supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[production-anon-key]
 SUPABASE_SERVICE_ROLE_KEY=[production-service-role-key]
@@ -281,6 +251,8 @@ git push origin feature/new-feature
 ```
 
 #### **2. Database Sync Script**
+*Napomena: Skripta `sync_cloud_database.sh` je predložena u ovoj dokumentaciji, ali možda nije prisutna u korenu projekta. Ako je želite koristiti, kreirajte je prema definiciji ispod.* 
+
 Kreiraj `sync_cloud_database.sh`:
 
 ```bash
@@ -299,9 +271,8 @@ sync_staging() {
     # Pull latest migracije
     npx supabase migration list
     
-    # Generiši tipove
-    npx supabase gen types typescript --linked > apps/mobile/src/types/supabase-staging.ts
-    npx supabase gen types typescript --linked > apps/web/src/types/supabase-staging.ts
+    # Generiši tipove (ispravljene putanje za Fleet-Flow)
+    npx supabase gen types typescript --linked > src/types/supabase-staging.ts
     
     echo "✅ Staging sync complete"
 }
@@ -316,9 +287,8 @@ sync_production() {
     # Pull latest migracije
     npx supabase migration list
     
-    # Generiši tipove
-    npx supabase gen types typescript --linked > apps/mobile/src/types/supabase-production.ts
-    npx supabase gen types typescript --linked > apps/web/src/types/supabase-production.ts
+    # Generiši tipove (ispravljene putanje za Fleet-Flow)
+    npx supabase gen types typescript --linked > src/types/supabase-production.ts
     
     echo "✅ Production sync complete"
 }
