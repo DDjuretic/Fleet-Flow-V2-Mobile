@@ -50,6 +50,15 @@ This is a high-level roadmap combining business features and technical implement
     - Implement features from the "Napredne Funkcionalnosti" section.
     - Develop the advanced analytics and reporting module.
     - Introduce geofencing and other location-based automation.
+    - **Integrate "Putni Nalog" Concept (from Putni-nalog App):**
+        - Refactor existing "Trip" module to align with "Putni Nalog" concept, including handling multiple drives within a single "Putni Nalog".
+        - Implement comprehensive cost logic (truck, car, fuel price, average consumption) from "Putni-nalog".
+        - **Offline Mode Integration:** Integrate robust offline mode and synchronization logic as implemented in "Putni-nalog" (using Expo Task Manager, AsyncStorage for background sync).
+        - **Fuel Expense Module:** Replace/adapt existing fuel module with the more robust and logically sound fuel expense module from "Putni-nalog", ensuring it is seamlessly integrated into Fleet Flow's data structures and UI.
+        - **Enhanced Reports:** Incorporate the advanced reporting features for drives and fuel from "Putni-nalog" into Fleet Flow's analytics module.
+        - **Trip Path Tracking:** Ensure detailed trip paths (coordinates) are stored and visualized on the map, leveraging the existing OpenStreetMap/Leaflet setup in WebMapView.
+        - **Pause Logic:** Develop and integrate logic for detecting and recording pauses during trips based on location data.
+        - **Fuel Station Geocoding:** Integrate automatic fuel station location identification using geolocation.
 
 - **Phase 5: Scaling & Optimization**
     - Performance optimization and database tuning.

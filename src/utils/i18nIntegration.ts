@@ -1,5 +1,5 @@
 import i18n from '../i18n';
-import { store } from '../store';
+import { store } from '../store/store';
 import { setLanguage } from '../store/slices/settingsSlice';
 
 // Function to sync i18n with Redux store

@@ -11,14 +11,18 @@
         *   Onboarding proces za nove korisnike.
         *   *(Core)*
     *   **2. Vožnje (Trips):**
-        *   Evidencija Vožnji: Pokretanje, pauziranje, završavanje vožnje; unos svrhe, destinacije, tipa vožnje.
+        *   **Evidencija Putnih Naloga:** Pokretanje, pauziranje, završavanje putnog naloga; unos svrhe, destinacije, tipa vožnje. Podrška za više vožnji unutar jednog putnog naloga.
         *   GPS Praćenje: Snimanje rute, brzine, zaustavljanja.
-        *   Offline Praćenje i sinhronizacija.
-        *   Pregled istorije vožnji sa detaljima i mapom.
+        *   **Detaljno praćenje putanje (path) za vizualizaciju na mapi.**
+        *   **Poboljšana offline funkcionalnost i sinhronizacija (korišćenjem pristupa iz Putni-nalog aplikacije).**
+        *   Pregled istorije putnih naloga sa detaljima i mapom.
         *   Izbor vozila (uz proveru dozvola).
+        *   **Logika pauza:** Detekcija i beleženje pauza tokom vožnje/putnog naloga.
         *   *(Core)*
     *   **3. Troškovi (Expenses):**
+        *   **Integrisan modul troškova goriva sa logikom iz Putni-nalog aplikacije (uključujući cijenu goriva, prosječnu potrošnju, itd.) i prilagođen Fleet Flow-u.**
         *   Unos troškova: gorivo/energija, putarine, parking, održavanje (osnovno), taksi, javni prevoz, ostalo.
+        *   **Automatsko popunjavanje lokacije pumpe putem geolokacije.**
         *   Kategorizacija troškova.
         *   Dodavanje slike računa/priznanice.
         *   Povezivanje troška sa vožnjom/vozilom.
@@ -102,7 +106,7 @@
         *   *(Core)*
     *   **16. Dubinska Analitika i Generisanje Izveštaja:**
         *   **A. Analitički Pregledi:** Vožnje, Troškovi, Vozni Park (sa svim detaljima koje smo naveli).
-        *   **B. Formalni i Operativni Izveštaji:** Putni Nalozi (standardni PDF + eksport za mail merge), Nedeljni/Mesečni Izveštaji, Iskorišćenost Vozila, Potrošnja Goriva/Energije, Troškovi Održavanja (osnovni), Istek Resursa, Aktivnosti Rezervacija, "FleetEco Rewards", Neregularnosti u Vožnji, CO2 Emisije (osnovna procena).
+        *   **B. Formalni i Operativni Izveštaji:** Putni Nalozi (standardni PDF + eksport za mail merge), Nedeljni/Mesečni Izveštaji, Iskorišćenost Vozila, Potrošnja Goriva/Energije, Troškovi Održavanja (osnovni), Istek Resursa, Aktivnosti Rezervacija, "FleetEco Rewards", Neregularnosti u Vožnji, CO2 Emisije (osnovna procena). **Uključiti poboljšane izveštaje za vožnje i gorivo iz Putni-nalog aplikacije.**
         *   **C. Opšte Funkcionalnosti Izveštavanja:** Filtriranje, sortiranje, eksport, zakazivanje (osnovno), arhiviranje.
         *   *(Core - Mogućnost prilagođavanja templejta putnih naloga može biti unapređenje u kasnijoj fazi)*
     *   **17. Administracija Gamifikacije ("FleetEco Rewards"):**
@@ -154,15 +158,21 @@
         *   Evidencija i Izveštavanje o Incidentima/Nesrećama.
         *   Praćenje Radnog Vremena Vozača (unapređeno).
         *   *(Baza Core, Razvoj Kasnija Faza)*
-    *   **28. Praćenje Ostalih Pokretnih Sredstava (Asset Tracking):**
+    *   **28. Praćenje Vremena Vožnje i Usklađenost sa Propisima (Driving Time & Compliance Monitoring):**
+        *   Praćenje aktivnog vremena vožnje, pauza i odmora vozača.
+        *   Alarmiranje i notifikacije o prekoračenju zakonskih okvira (npr. EU regulative za radno vreme vozača).
+        *   Konfigurabilna pravila po regionima/zemljama.
+        *   Izveštaji o usklađenosti.
+        *   *(Baza Core, Razvoj Kasnija Faza - Zahteva detaljnu analizu propisa)*
+    *   **29. Praćenje Ostalih Pokretnih Sredstava (Asset Tracking):**
         *   *(Baza Core, Razvoj Kasnija Faza)*
-    *   **29. Napredno Upravljanje Gorivnim Karticama (bez direktne API integracije za sada):**
+    *   **30. Napredno Upravljanje Gorivnim Karticama (bez direktne API integracije za sada):**
         *   Evidencija, limiti, poluautomatski uvoz.
         *   *(Baza Core, Razvoj Kasnija Faza)*
-    *   **30. Prilagodljivi Tokovi Rada (Custom Workflows - Osnovna Podrška):**
+    *   **31. Prilagodljivi Tokovi Rada (Custom Workflows - Osnovna Podrška):**
         *   Proširenje na druge procese osim troškova.
         *   *(Baza Core (fleksibilnost), Razvoj Kasnija Faza)*
-    *   **31. Upravljanje Gumama (Tire Management):**
+    *   **32. Upravljanje Gumama (Tire Management):**
         *   *(Baza Core, Razvoj Kasnija Faza)*
 
 ---

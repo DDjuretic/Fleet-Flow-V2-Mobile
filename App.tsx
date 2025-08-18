@@ -8,8 +8,8 @@ import Toast from 'react-native-toast-message';
 import toastConfig from './src/utils/toastConfig';
 import './src/i18n'; // Initializes i18n
 import { Provider, useSelector } from 'react-redux';
-import { store, persistor, RootState } from './src/store/store';
 import { PersistGate } from 'redux-persist/integration/react';
+import { store, persistor, RootState } from './src/store/store';
 import 'react-native-gesture-handler';
 
 // Navigation
@@ -68,7 +68,7 @@ ExpoSplashScreen.preventAutoHideAsync();
 
 const AppNavigator = () => {
   const { session, user, loading: authLoading } = useAuth();
-  const themeMode = useSelector((state: RootState) => state.theme.mode);
+  const themeMode = useSelector((state: RootState) => state.theme?.mode || 'light');
   const [splashAnimationFinished, setSplashAnimationFinished] = useState(false);
 
   useEffect(() => {
@@ -165,7 +165,7 @@ const AppNavigator = () => {
 const App = () => {
   return (
     <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
+      <PersistGate loading={<View style={styles.container}><ActivityIndicator /></View>} persistor={persistor}>
         <Suspense fallback={<View style={styles.container}><ActivityIndicator /></View>}>
           <AuthProvider>
               <AppNavigator />
