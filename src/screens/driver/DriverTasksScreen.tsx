@@ -30,6 +30,9 @@ import { useSelector } from 'react-redux';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTripManager } from '../../hooks/useTripManager';
 
+// Services
+import { obdService } from '../../services/obdService';
+
 // Components
 import { TierGuard } from '../../components/TierGuard';
 
@@ -148,7 +151,62 @@ const DriverTasksScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
 
+  // OBD State
+  const [obdConnected, setObdConnected] = useState(false);
+  const [obdData, setObdData] = useState<any>(null);
+  const [obdAlerts, setObdAlerts] = useState<any[]>([]);
+  const [obdMonitoring, setObdMonitoring] = useState(false);
+
   const colors = themeMode === 'dark' ? Colors.DARK : Colors.LIGHT;
+
+  // OBD Monitoring Effect
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
+
+    const startOBDMonitoring = async () => {
+      if (obdMonitoring && obdConnected) {
+        intervalId = setInterval(async () => {
+          try {
+            const data = await obdService.getRealTimeData();
+            if (data) {
+              setObdData(data);
+              // Update alerts
+              const alerts = obdService.getAlerts();
+              setObdAlerts(alerts);
+            }
+          } catch (error) {
+            console.error('[DriverTasks] OBD monitoring error:', error);
+            setObdMonitoring(false);
+          }
+        }, 2000); // Update every 2 seconds
+      }
+    };
+
+    startOBDMonitoring();
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [obdMonitoring, obdConnected]);
+
+  // Initialize OBD on component mount
+  useEffect(() => {
+    const initializeOBD = async () => {
+      try {
+        const initialized = await obdService.initialize();
+        if (initialized) {
+          const status = obdService.getConnectionStatus();
+          setObdConnected(status?.connected || false);
+        }
+      } catch (error) {
+        console.error('[DriverTasks] OBD initialization failed:', error);
+      }
+    };
+
+    initializeOBD();
+  }, []);
 
   // Filter tasks
   const activeTasks = tasks.filter(task => task.status !== 'completed');
@@ -204,6 +262,54 @@ const DriverTasksScreen: React.FC = () => {
     setRefreshing(true);
     // TODO: Implement real data refresh from API
     setTimeout(() => setRefreshing(false), 1000);
+  };
+
+  // OBD Control Functions
+  const handleConnectOBD = async () => {
+    try {
+      // For demo, use first available vehicle
+      // In real app, get from user's assigned vehicles
+      const demoVehicleId = 'demo-vehicle-001';
+
+      await obdService.connect(demoVehicleId);
+      setObdConnected(true);
+      setObdMonitoring(true);
+
+      Alert.alert(
+        t('obd_connected', 'OBD Connected'),
+        t('obd_monitoring_started', 'Vehicle monitoring started successfully')
+      );
+    } catch (error) {
+      Alert.alert(
+        t('obd_connection_failed', 'OBD Connection Failed'),
+        error instanceof Error ? error.message : t('unknown_error', 'Unknown error')
+      );
+    }
+  };
+
+  const handleDisconnectOBD = async () => {
+    try {
+      await obdService.disconnect();
+      setObdConnected(false);
+      setObdMonitoring(false);
+      setObdData(null);
+      setObdAlerts([]);
+
+      Alert.alert(
+        t('obd_disconnected', 'OBD Disconnected'),
+        t('obd_monitoring_stopped', 'Vehicle monitoring stopped')
+      );
+    } catch (error) {
+      Alert.alert(
+        t('obd_disconnect_failed', 'OBD Disconnect Failed'),
+        error instanceof Error ? error.message : t('unknown_error', 'Unknown error')
+      );
+    }
+  };
+
+  const handleClearAlerts = () => {
+    obdService.clearResolvedAlerts();
+    setObdAlerts(obdService.getAlerts());
   };
 
   // Task card component
@@ -360,6 +466,108 @@ const DriverTasksScreen: React.FC = () => {
             />
           </TouchableOpacity>
         </View>
+
+        {/* OBD Status Bar */}
+        <View style={[styles.obdStatusBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
+          <View style={styles.obdStatusLeft}>
+            <Ionicons
+              name={obdConnected ? "hardware-chip" : "hardware-chip-outline"}
+              size={20}
+              color={obdConnected ? colors.primary : colors.textSecondary}
+            />
+            <Text style={[styles.obdStatusText, { color: colors.text }]}>
+              {t('vehicle_monitoring', 'Vehicle Monitoring')}: {' '}
+              <Text style={{ color: obdConnected ? '#00AA00' : '#FF4444', fontWeight: 'bold' }}>
+                {obdConnected ? t('connected', 'Connected') : t('disconnected', 'Disconnected')}
+              </Text>
+            </Text>
+          </View>
+
+          <View style={styles.obdStatusRight}>
+            {obdConnected && (
+              <TouchableOpacity
+                style={[styles.obdButton, { backgroundColor: obdMonitoring ? '#FF8800' : colors.primary }]}
+                onPress={() => setObdMonitoring(!obdMonitoring)}
+              >
+                <Ionicons
+                  name={obdMonitoring ? "pause" : "play"}
+                  size={16}
+                  color="white"
+                />
+              </TouchableOpacity>
+            )}
+
+            <TouchableOpacity
+              style={[styles.obdButton, { backgroundColor: obdConnected ? '#FF4444' : '#00AA00' }]}
+              onPress={obdConnected ? handleDisconnectOBD : handleConnectOBD}
+            >
+              <Ionicons
+                name={obdConnected ? "power" : "power-outline"}
+                size={16}
+                color="white"
+              />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        {/* OBD Data Display */}
+        {obdConnected && obdData && (
+          <View style={[styles.obdDataContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.obdDataRow}>
+              <View style={styles.obdDataItem}>
+                <Ionicons name="speedometer" size={16} color={colors.primary} />
+                <Text style={[styles.obdDataLabel, { color: colors.textSecondary }]}>{t('speed', 'Speed')}</Text>
+                <Text style={[styles.obdDataValue, { color: colors.text }]}>{obdData.vehicle_speed} km/h</Text>
+              </View>
+
+              <View style={styles.obdDataItem}>
+                <Ionicons name="thermometer" size={16} color={colors.primary} />
+                <Text style={[styles.obdDataLabel, { color: colors.textSecondary }]}>{t('engine_temp', 'Engine')}</Text>
+                <Text style={[styles.obdDataValue, { color: colors.text }]}>{obdData.engine_temp}°C</Text>
+              </View>
+
+              <View style={styles.obdDataItem}>
+                <Ionicons name="battery-charging" size={16} color={colors.primary} />
+                <Text style={[styles.obdDataLabel, { color: colors.textSecondary }]}>{t('fuel', 'Fuel')}</Text>
+                <Text style={[styles.obdDataValue, { color: colors.text }]}>{obdData.fuel_level}%</Text>
+              </View>
+
+              <View style={styles.obdDataItem}>
+                <Ionicons name="flash" size={16} color={colors.primary} />
+                <Text style={[styles.obdDataLabel, { color: colors.textSecondary }]}>{t('battery', 'Battery')}</Text>
+                <Text style={[styles.obdDataValue, { color: colors.text }]}>{obdData.battery_voltage}V</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* OBD Alerts */}
+        {obdAlerts.length > 0 && (
+          <View style={[styles.alertsContainer, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.alertsHeader}>
+              <Ionicons name="warning" size={20} color="#FF8800" />
+              <Text style={[styles.alertsTitle, { color: colors.text }]}>
+                {t('vehicle_alerts', 'Vehicle Alerts')} ({obdAlerts.length})
+              </Text>
+              <TouchableOpacity onPress={handleClearAlerts}>
+                <Ionicons name="close" size={20} color={colors.textSecondary} />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.alertsScroll}>
+              {obdAlerts.slice(0, 3).map((alert, index) => (
+                <View key={alert.id} style={[styles.alertChip, {
+                  backgroundColor: alert.severity === 'high' ? '#FF4444' :
+                                   alert.severity === 'medium' ? '#FF8800' : '#00AA00'
+                }]}>
+                  <Text style={styles.alertText} numberOfLines={2}>
+                    {alert.message}
+                  </Text>
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Active Task Indicator */}
         {activeTask && (
@@ -609,6 +817,95 @@ const styles = StyleSheet.create({
     fontSize: IS_TABLET ? 16 : 14,
     textAlign: 'center',
     paddingHorizontal: 32,
+  },
+
+  // OBD Styles
+  obdStatusBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: IS_TABLET ? 24 : 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+  },
+  obdStatusLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  obdStatusText: {
+    fontSize: IS_TABLET ? 14 : 12,
+    marginLeft: 8,
+  },
+  obdStatusRight: {
+    flexDirection: 'row',
+  },
+  obdButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginLeft: 8,
+  },
+
+  obdDataContainer: {
+    marginHorizontal: IS_TABLET ? 24 : 16,
+    marginBottom: 12,
+    padding: IS_TABLET ? 16 : 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  obdDataRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  obdDataItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  obdDataLabel: {
+    fontSize: IS_TABLET ? 12 : 10,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  obdDataValue: {
+    fontSize: IS_TABLET ? 18 : 16,
+    fontWeight: 'bold',
+    marginTop: 2,
+    textAlign: 'center',
+  },
+
+  alertsContainer: {
+    marginHorizontal: IS_TABLET ? 24 : 16,
+    marginBottom: 12,
+    padding: IS_TABLET ? 16 : 12,
+    borderRadius: 8,
+    borderWidth: 1,
+  },
+  alertsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  alertsTitle: {
+    flex: 1,
+    fontSize: IS_TABLET ? 16 : 14,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  alertsScroll: {
+    maxHeight: 60,
+  },
+  alertChip: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+    marginRight: 8,
+    minWidth: IS_TABLET ? 150 : 120,
+  },
+  alertText: {
+    color: 'white',
+    fontSize: IS_TABLET ? 12 : 10,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 
