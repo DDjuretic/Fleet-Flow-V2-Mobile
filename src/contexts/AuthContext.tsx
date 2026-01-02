@@ -5,6 +5,7 @@ import { Database } from '../types/supabase'; // Import the generated types
 import { useTranslation } from 'react-i18next';
 import { showErrorToast } from '../utils/toastUtils';
 import { roleService } from '../services/roleService'; // Import RoleService
+import { UserTier, UserTierService } from '../types/userTier'; // Import UserTier system
 
 // Define the user profile structure using the generated types
 export type UserProfile = Database['public']['Tables']['users']['Row'];
@@ -19,6 +20,8 @@ export interface AuthContextType {
   refreshUserProfile: () => Promise<void>;
   isAdmin: boolean;
   companyId: string | null;
+  userTier: UserTier;
+  hasPermission: (permission: keyof import('../types/userTier').FeaturePermissions) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,6 +33,7 @@ export const AuthProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [userTier, setUserTier] = useState<UserTier>(UserTier.BASIC_USER);
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -37,7 +41,54 @@ export const AuthProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
     setSession(null);
     setCompanyId(null);
     setIsAdmin(false);
+    setUserTier(UserTier.BASIC_USER);
   };
+
+  /**
+   * Determine user tier based on roles and position
+   */
+  const determineUserTier = useCallback(async (userId: string, userProfile: UserProfile): Promise<UserTier> => {
+    try {
+      // Check if user is admin
+      const isAdminUser = await roleService.hasRole(userId, 'admin');
+      if (isAdminUser) {
+        return UserTier.ADMINISTRATOR;
+      }
+
+      // Check if user has field worker roles
+      const isDispatcher = await roleService.hasRole(userId, 'dispatcher');
+      const isDriver = await roleService.hasRole(userId, 'driver');
+
+      // Check position for field workers
+      const fieldWorkerPositions = [
+        'driver', 'dispatcher', 'field_worker', 'delivery_driver',
+        'warehouse_worker', 'technician', 'field_technician'
+      ];
+
+      const position = userProfile.position?.toLowerCase();
+      const hasFieldWorkerPosition = position && fieldWorkerPositions.some(pos =>
+        position.includes(pos)
+      );
+
+      if (isDispatcher || isDriver || hasFieldWorkerPosition) {
+        return UserTier.FIELD_WORKER;
+      }
+
+      // Default to basic user
+      return UserTier.BASIC_USER;
+
+    } catch (error) {
+      console.error('Error determining user tier:', error);
+      return UserTier.BASIC_USER; // Fallback to basic user
+    }
+  }, []);
+
+  /**
+   * Check if user has specific permission based on their tier
+   */
+  const hasPermission = useCallback((permission: keyof import('../types/userTier').FeaturePermissions): boolean => {
+    return UserTierService.hasPermission(userTier, permission);
+  }, [userTier]);
 
   const fetchUserProfile = useCallback(async (session: Session | null) => {
     setLoading(true);
@@ -58,9 +109,15 @@ export const AuthProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
         if (profile) {
           setUser(profile);
           setCompanyId(profile.company_id);
+
+          // Determine user tier
+          const tier = await determineUserTier(profile.user_id, profile);
+          setUserTier(tier);
+
           const isAdminUser = await roleService.hasRole(profile.user_id, 'admin');
           setIsAdmin(isAdminUser);
-          console.log(`👤 User profile loaded. Company ID: ${profile.company_id}, Onboarding: ${profile.onboarding_status}, Admin: ${isAdminUser}`);
+
+          console.log(`👤 User profile loaded. Company ID: ${profile.company_id}, Onboarding: ${profile.onboarding_status}, Admin: ${isAdminUser}, Tier: ${tier}`);
         } else {
           console.log(`👤 No profile found for user ${session.user.id}, might be a new user.`);
           // Create a minimal user object to prevent crashes, app logic will handle redirection.
@@ -194,6 +251,8 @@ export const AuthProvider: React.FC<PropsWithChildren<{}>> = ({ children }) => {
     refreshUserProfile,
     isAdmin,
     companyId,
+    userTier,
+    hasPermission,
   };
 
   return (
