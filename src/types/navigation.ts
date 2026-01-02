@@ -107,6 +107,9 @@ export type RootStackParamList = {
   EditReminder: { reminderId: string };
   EditUser: { user: any };
 
+  // Driver Tasks
+  DriverTasks: undefined;
+
   // Settings screens
   OSRMSettings: undefined;
   SpeedLimitSettings: undefined;
@@ -122,6 +125,7 @@ export type TabParamList = {
   Reminders: undefined;
   Reservations: undefined;
   EditUser: { user: any };
+  DriverTasks: undefined;
 
   // Trip stack
   TripList: undefined;

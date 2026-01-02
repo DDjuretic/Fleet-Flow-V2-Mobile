@@ -27,6 +27,7 @@ import HomeScreen from '../screens/main/HomeScreen';
 import TripsScreen from '../screens/main/TripsScreen';
 import ExpensesScreen from '../screens/main/ExpensesScreen';
 import ReservationsScreen from '../screens/main/ReservationsScreen';
+import DriverTasksScreen from '../screens/driver/DriverTasksScreen';
 
 // Settings & Admin screens
 import SettingsScreen from '../screens/settings/SettingsScreen';
@@ -357,6 +358,14 @@ const DualSidebarNavigator = () => {
         component={() => (
           <DualSidebarLayout>
             <TripsScreen />
+          </DualSidebarLayout>
+        )}
+      />
+      <Drawer.Screen
+        name="DriverTasks"
+        component={() => (
+          <DualSidebarLayout>
+            <DriverTasksScreen />
           </DualSidebarLayout>
         )}
       />
