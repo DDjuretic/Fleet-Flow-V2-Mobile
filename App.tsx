@@ -4,6 +4,7 @@ import { NavigationContainer, Theme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import * as ExpoSplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from './src/contexts/AuthContext';
+import { TripProvider } from './src/context/trip/TripContext';
 import Toast from 'react-native-toast-message';
 import toastConfig from './src/utils/toastConfig';
 import './src/i18n'; // Initializes i18n
@@ -27,6 +28,8 @@ import SettingsScreen from './src/screens/settings/SettingsScreen';
 import UserProfileScreen from './src/screens/settings/UserProfileScreen';
 import EditProfileScreen from './src/screens/settings/EditProfileScreen';
 import NotificationsSettingsScreen from './src/screens/settings/NotificationsSettingsScreen';
+import OSRMSettingsScreen from './src/screens/settings/OSRMSettingsScreen';
+import SpeedLimitSettingsScreen from './src/screens/settings/SpeedLimitSettingsScreen';
 import NotificationsScreen from './src/screens/main/NotificationsScreen';
 
 // Admin screens
@@ -50,6 +53,7 @@ import AddTripScreen from './src/screens/trips/AddTripScreen';
 import TripDetailsScreen from './src/screens/trips/TripDetailsScreen';
 import TripMapScreen from './src/screens/trips/TripMapScreen';
 // ... import all other form screens ...
+import AddExpenseScreen from './src/screens/expenses/AddExpenseScreen';
 import AddReservationScreen from './src/screens/reservations/AddReservationScreen';
 import EditReservationScreen from './src/screens/reservations/EditReservationScreen';
 import ReservationDetailsScreen from './src/screens/reservations/ReservationDetailsScreen';
@@ -114,7 +118,7 @@ const AppNavigator = () => {
         <StatusBar barStyle={statusBarContent} backgroundColor={navigationTheme.colors.background} />
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             {session && user ? (
-            !user.company_id ? (
+            (!user.company_id && user.onboarding_status === 'pending') ? (
                 <Stack.Screen name="CreateCompany" component={CreateCompanyScreen} />
             ) : user.onboarding_status !== 'completed' ? (
                 <Stack.Screen name="OnboardingFlow" component={OnboardingFlow} />
@@ -125,6 +129,8 @@ const AppNavigator = () => {
                 <Stack.Screen name="UserProfile" component={UserProfileScreen} />
                 <Stack.Screen name="EditProfile" component={EditProfileScreen} />
                 <Stack.Screen name="NotificationsSettings" component={NotificationsSettingsScreen} />
+                <Stack.Screen name="OSRMSettings" component={OSRMSettingsScreen} />
+                <Stack.Screen name="SpeedLimitSettings" component={SpeedLimitSettingsScreen} />
                 <Stack.Screen name="Notifications" component={NotificationsScreen} />
                 <Stack.Screen name="AddReservation" component={AddReservationScreen} />
                 <Stack.Screen name="ReservationDetails" component={ReservationDetailsScreen} />
@@ -134,6 +140,7 @@ const AppNavigator = () => {
                 <Stack.Screen name="AddTrip" component={AddTripScreen} />
                 <Stack.Screen name="TripDetailsScreen" component={TripDetailsScreen} />
                 <Stack.Screen name="TripMap" component={TripMapScreen} />
+                <Stack.Screen name="AddExpense" component={AddExpenseScreen} />
                 <Stack.Screen name="AddReminder" component={AddReminderScreen} />
                 <Stack.Screen name="EditReminder" component={EditReminderScreen} />
                 <Stack.Screen name="EditTrip" component={EditTripScreen} />
@@ -168,7 +175,9 @@ const App = () => {
       <PersistGate loading={<View style={styles.container}><ActivityIndicator /></View>} persistor={persistor}>
         <Suspense fallback={<View style={styles.container}><ActivityIndicator /></View>}>
           <AuthProvider>
+            <TripProvider>
               <AppNavigator />
+            </TripProvider>
           </AuthProvider>
           <Toast config={toastConfig} />
         </Suspense>

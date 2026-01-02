@@ -132,7 +132,7 @@ const FuelManagementModule: React.FC<FuelManagementModuleProps> = ({
           consumption,
           company_id
         `)
-        .eq('company_id', user?.user_metadata?.company_id);
+        .eq('company_id', (user as any)?.user_metadata?.company_id);
 
       if (basicError) {
         console.error('Error loading basic vehicles:', basicError);
@@ -163,7 +163,7 @@ const FuelManagementModule: React.FC<FuelManagementModuleProps> = ({
               fuel_capacity,
               company_id
             `)
-            .eq('company_id', user?.user_metadata?.company_id);
+            .eq('company_id', (user as any)?.user_metadata?.company_id);
 
           if (!extendedError && extendedVehicles) {
             vehiclesData = extendedVehicles;
@@ -333,7 +333,7 @@ const FuelManagementModule: React.FC<FuelManagementModuleProps> = ({
         .from('fuel_records')
         .insert({
           vehicle_id: selectedVehicle.id,
-          user_id: user?.id,
+          user_id: (user as any)?.id,
           amount,
           cost,
           fuel_price_per_unit: pricePerUnit,
@@ -370,7 +370,7 @@ const FuelManagementModule: React.FC<FuelManagementModuleProps> = ({
         const { error: expenseError } = await supabase
           .from('expenses')
           .insert({
-            user_id: user?.id,
+            user_id: (user as any)?.id,
             vehicle_id: selectedVehicle.id,
             expense_category_id: 1, // Fuel category
             amount: businessAmount,

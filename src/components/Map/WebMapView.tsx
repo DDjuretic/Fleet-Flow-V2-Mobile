@@ -83,9 +83,9 @@ const WebMapView: React.FC<WebMapViewProps> = ({
     border: Colors.LIGHT.border,
   };
 
-  // Default coordinates (Belgrade, Serbia)
-  const defaultLat = centerCoordinate ? centerCoordinate[1] : 44.7866;
-  const defaultLng = centerCoordinate ? centerCoordinate[0] : 20.4489;
+  // Default coordinates (will be overridden by current location)
+  const defaultLat = centerCoordinate ? centerCoordinate[1] : 0;
+  const defaultLng = centerCoordinate ? centerCoordinate[0] : 0;
   const defaultZoom = navigationMode ? 16 : zoomLevel; // Higher zoom for navigation mode
 
   // Map layer configurations
@@ -108,8 +108,18 @@ const WebMapView: React.FC<WebMapViewProps> = ({
     }
   };
 
-  // Generate HTML for the map
-  const mapHTML = `
+  // Generate HTML for the map - memoized to prevent reloads on route changes
+  const mapHTML = React.useMemo(() => {
+    const layerControlsHtml = showLayerControls ? `
+      <div class="layer-control">
+        <button class="layer-button ${currentMapLayer === 'standard' ? 'active' : ''}" onclick="changeLayer('standard')">Standard</button>
+        <button class="layer-button ${currentMapLayer === 'satellite' ? 'active' : ''}" onclick="changeLayer('satellite')">Satellite</button>
+        <button class="layer-button ${currentMapLayer === 'terrain' ? 'active' : ''}" onclick="changeLayer('terrain')">Terrain</button>
+        <button class="layer-button ${currentMapLayer === 'hybrid' ? 'active' : ''}" onclick="changeLayer('hybrid')">Hybrid</button>
+      </div>
+    ` : '';
+
+    return `
     <!DOCTYPE html>
     <html>
     <head>
@@ -215,14 +225,7 @@ const WebMapView: React.FC<WebMapViewProps> = ({
     </head>
     <body>
         <div id="map"></div>
-      ${showLayerControls ? `
-      <div class="layer-control">
-        <button class="layer-button ${currentMapLayer === 'standard' ? 'active' : ''}" onclick="changeLayer('standard')">Standard</button>
-        <button class="layer-button ${currentMapLayer === 'satellite' ? 'active' : ''}" onclick="changeLayer('satellite')">Satellite</button>
-        <button class="layer-button ${currentMapLayer === 'terrain' ? 'active' : ''}" onclick="changeLayer('terrain')">Terrain</button>
-        <button class="layer-button ${currentMapLayer === 'hybrid' ? 'active' : ''}" onclick="changeLayer('hybrid')">Hybrid</button>
-      </div>
-      ` : ''}
+        ${layerControlsHtml}
       
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
         <script>
@@ -230,6 +233,8 @@ const WebMapView: React.FC<WebMapViewProps> = ({
         let currentTileLayer;
         let userLocationMarker;
         let routePolyline;
+        let startMarker;
+        let endMarker;
         let markers = [];
         
         const layerConfigs = {
@@ -261,6 +266,9 @@ const WebMapView: React.FC<WebMapViewProps> = ({
             maxZoom: 19
           }).addTo(map);
           
+          // Initialize route polyline
+          routePolyline = L.polyline([], { color: '${screenColors.primary}', weight: 6, opacity: 0.8 }).addTo(map);
+
           // Add map click handler
           map.on('click', function(e) {
             window.ReactNativeWebView?.postMessage(JSON.stringify({
@@ -268,6 +276,44 @@ const WebMapView: React.FC<WebMapViewProps> = ({
               coordinate: [e.latlng.lng, e.latlng.lat]
             }));
           });
+        }
+
+        function updateRoute(coords) {
+          if (!map) return;
+          if (routePolyline) {
+            routePolyline.setLatLngs(coords);
+            
+            // Handle start/end markers
+            if (coords.length > 0) {
+              if (!startMarker) {
+                startMarker = L.marker(coords[0], { 
+                  icon: L.divIcon({
+                    className: 'start-end-marker start-marker',
+                    html: 'S',
+                    iconSize: [30, 30],
+                    iconAnchor: [15, 15]
+                  }) 
+                }).addTo(map);
+              } else {
+                startMarker.setLatLng(coords[0]);
+              }
+              
+              if (coords.length > 1) {
+                if (!endMarker) {
+                  endMarker = L.marker(coords[coords.length - 1], {
+                    icon: L.divIcon({
+                      className: 'start-end-marker end-marker',
+                      html: 'E',
+                      iconSize: [30, 30],
+                      iconAnchor: [15, 15]
+                    }) 
+                  }).addTo(map);
+                } else {
+                  endMarker.setLatLng(coords[coords.length - 1]);
+                }
+              }
+            }
+          }
         }
         
         function changeLayer(layerType) {
@@ -285,7 +331,15 @@ const WebMapView: React.FC<WebMapViewProps> = ({
           document.querySelectorAll('.layer-button').forEach(btn => {
             btn.classList.remove('active');
           });
-          document.querySelector(\`[onclick="changeLayer('\${layerType}')"]\`).classList.add('active');
+          
+          // Find the button and add active class
+          const buttons = document.querySelectorAll('.layer-button');
+          for (let i = 0; i < buttons.length; i++) {
+            if (buttons[i].getAttribute('onclick').indexOf(layerType) !== -1) {
+              buttons[i].classList.add('active');
+              break;
+            }
+          }
           
           // Notify React Native
           window.ReactNativeWebView?.postMessage(JSON.stringify({
@@ -363,59 +417,6 @@ const WebMapView: React.FC<WebMapViewProps> = ({
                         return container;
                     }
                 });
-                map.addControl(new CustomControl());
-
-                // --- ROUTE AND MARKERS ---
-        let routeCoordinates = ${JSON.stringify(route.map(point => `[${point.latitude}, ${point.longitude}]`).join(',\n'))};
-                let routePolyline = null;
-
-        if (routeCoordinates.length > 1) {
-          routePolyline = L.polyline(routeCoordinates, { color: '${screenColors.primary}', weight: 6, opacity: 0.8 }).addTo(map);
-
-                    // Start marker
-          L.marker(routeCoordinates[0], { 
-                icon: L.divIcon({
-                            className: 'start-end-marker start-marker',
-              html: 'S',
-              iconSize: [30, 30],
-              iconAnchor: [15, 15]
-                        }) 
-          }).addTo(map).bindPopup('Start');
-                    
-                    // End marker
-          L.marker(routeCoordinates[routeCoordinates.length - 1], {
-                icon: L.divIcon({
-                            className: 'start-end-marker end-marker',
-              html: 'E',
-              iconSize: [30, 30],
-              iconAnchor: [15, 15]
-                        }) 
-          }).addTo(map).bindPopup('End');
-                    
-                    // Auto-fit route on load
-                    setTimeout(function() {
-                        fitRouteBounds();
-                    }, 1000);
-                }
-
-                // --- ADDITIONAL MARKERS (POI, etc.) ---
-        let additionalMarkers = ${JSON.stringify(markers.map(marker => ({
-          lat: marker.coordinate[1],
-          lng: marker.coordinate[0],
-          title: marker.title || '',
-          description: marker.description || '',
-          type: marker.type || 'custom'
-        })))};
-                additionalMarkers.forEach(function(marker) {
-                    L.marker([marker.lat, marker.lng], {
-                        icon: L.divIcon({
-                            className: 'poi-marker',
-              html: marker.type === 'poi' ? 'P' : 'M',
-              iconSize: [26, 26],
-              iconAnchor: [13, 13]
-                        })
-          }).addTo(map).bindPopup(marker.title + (marker.description ? '<br>' + marker.description : ''));
-                });
 
                 // --- USER LOCATION TRACKING ---
                 let isFollowing = ${followUserLocation};
@@ -423,7 +424,7 @@ const WebMapView: React.FC<WebMapViewProps> = ({
 
                 // Function to fit map to route bounds
                 function fitRouteBounds() {
-                    if (routePolyline) {
+                    if (routePolyline && routePolyline.getLatLngs().length > 0) {
                         map.fitBounds(routePolyline.getBounds().pad(0.1));
                     }
                 }
@@ -529,7 +530,9 @@ const WebMapView: React.FC<WebMapViewProps> = ({
                     }
                 }
 
-                // Start tracking if showUserLocation is enabled
+                // Initialize everything
+                initMap();
+                map.addControl(new CustomControl());
                 if (${showUserLocation}) {
                     startLocationTracking();
                 }
@@ -538,18 +541,11 @@ const WebMapView: React.FC<WebMapViewProps> = ({
             window.ReactNativeWebView.postMessage(JSON.stringify({
                 type: 'mapLoaded'
             }));
-                
-            } catch(e) {
-                console.error('Map initialization error:', e);
-                window.ReactNativeWebView.postMessage(JSON.stringify({
-                    type: 'mapError',
-                    data: { error: e.message }
-                }));
-            }
         </script>
     </body>
     </html>
-    `;
+  `;
+  }, [themeMode, currentMapLayer, navigationMode, showLayerControls, showUserLocation]);
 
   // Handle messages from WebView
   const handleMessage = (event: any) => {
@@ -557,6 +553,10 @@ const WebMapView: React.FC<WebMapViewProps> = ({
       const message = JSON.parse(event.nativeEvent.data);
       
       switch (message.type) {
+        case 'mapLoaded':
+          setMapLoaded(true);
+          break;
+          
         case 'mapPress':
           if (onMapPress) {
             onMapPress(message.coordinate);
@@ -578,7 +578,10 @@ const WebMapView: React.FC<WebMapViewProps> = ({
           console.log('Unknown WebView message:', message);
       }
     } catch (error) {
-      console.error('Error parsing WebView message:', error);
+      // It might be a simple string message
+      if (event.nativeEvent.data === 'mapReady') {
+        setMapLoaded(true);
+      }
     }
   };
 
@@ -661,12 +664,26 @@ const WebMapView: React.FC<WebMapViewProps> = ({
     }
   }, [centerCoordinate, mapLoaded]);
 
-  // Effect to fit route when route changes
+  // Effect to update route in real-time
   useEffect(() => {
-    if (mapLoaded && route.length > 1) {
-      setTimeout(() => fitToRoute(), 500);
+    if (mapLoaded && route.length > 0 && webViewRef.current) {
+      const script = `
+        updateRoute([${route.map(p => `[${p.latitude}, ${p.longitude}]`).join(',')}]);
+        true;
+      `;
+      webViewRef.current.injectJavaScript(script);
     }
   }, [route, mapLoaded]);
+
+  // Effect to fit route when route changes (less frequent)
+  useEffect(() => {
+    if (mapLoaded && route.length > 1) {
+      // Only fit to route if not following user or if it's the first load
+      if (!isFollowingUser || route.length < 5) {
+        setTimeout(() => fitToRoute(), 500);
+      }
+    }
+  }, [route.length > 1, mapLoaded]);
 
   return (
     <View style={[styles.container, style]}>

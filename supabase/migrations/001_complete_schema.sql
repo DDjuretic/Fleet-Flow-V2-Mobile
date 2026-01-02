@@ -892,6 +892,37 @@ INSERT INTO trip_purposes (trip_purpose_id, name, description, category) VALUES
   ('55555555-5555-5555-5555-555555555555', 'Other', 'Other purpose', 'general')
 ON CONFLICT (trip_purpose_id) DO NOTHING;
 
+-- =============================================
+-- PROFILES TABLE (extends auth.users)
+-- =============================================
+CREATE TABLE IF NOT EXISTS profiles (
+    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
+    company_id UUID REFERENCES companies(company_id),
+    first_name VARCHAR(100),
+    last_name VARCHAR(100),
+    email VARCHAR(255),
+    phone VARCHAR(50),
+    avatar_url TEXT,
+    role VARCHAR(50) DEFAULT 'user',
+    status user_status DEFAULT 'active',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+
+    -- Extended profile fields
+    alternative_phone VARCHAR(50),
+    biography TEXT,
+    branch VARCHAR(100),
+    certifications TEXT,
+    work_address TEXT,
+    work_city VARCHAR(100),
+    work_postal_code VARCHAR(20),
+    work_country VARCHAR(100),
+
+    -- Fuel preferences for travel orders
+    average_consumption DECIMAL(10,2) DEFAULT 8.0, -- L/100km
+    fuel_price DECIMAL(10,2) DEFAULT 1.50 -- EUR/L
+);
+
 -- Insert sample POIs
 INSERT INTO pois (poi_id, company_id, name, address, latitude, longitude, category) VALUES
   ('11111111-1111-1111-1111-111111111111', '3cbc58f4-df9f-4069-83dc-b74d6e0a3dbe', 'H.Office', 'Dr Vukašina Markovića, Kruševac, Podgorica', 42.4307, 19.2478, 'office'),

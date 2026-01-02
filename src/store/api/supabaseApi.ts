@@ -156,6 +156,7 @@ export interface DbTrip {
   vehicle_id: string;
   trip_type_id?: string | null;
   trip_purpose_id?: string | null;
+  travel_order_id?: string | null;
   start_time: string;
   end_time?: string | null;
   start_location_address?: string | null;
@@ -165,13 +166,40 @@ export interface DbTrip {
   status: string;
   notes?: string | null;
   purpose_description?: string | null;
+  path?: any[] | null;
+  pause_details?: any | null;
+  individual_cost?: number | null;
+  vehicle_type?: string | null;
+  fuel_cost_params_snapshot?: any | null;
   created_at: string;
   updated_at: string;
-  
+
   // Joined data
   vehicles?: DbVehicle | null;
   trip_types?: DbTripType | null;
   users?: DbUserShort | null;
+  travel_orders?: DbTravelOrder | null;
+}
+
+export interface DbTravelOrder {
+  id: string;
+  user_id: string;
+  company_id: string;
+  status: string; // 'active', 'completed', 'pending_approval'
+  purpose?: string | null;
+  start_date: string;
+  end_date?: string | null;
+  total_distance_km: number;
+  base_cost: number;
+  calculated_total_cost: number;
+  cost_calculation_rules_snapshot?: any | null;
+  cost_breakdown?: any | null;
+  created_at: string;
+  updated_at: string;
+
+  // Joined data
+  users?: DbUserShort | null;
+  companies?: any | null;
 }
 
 export interface DbReminder {
@@ -202,9 +230,12 @@ export interface DbReminder {
 
 // START NEW INTERFACES FOR RESERVATIONS
 export interface DbUserShort {
+  user_id?: string;
   first_name?: string | null;
   last_name?: string | null;
   avatar_url?: string | null;
+  id?: string; // For compatibility
+  user_metadata?: any; // For compatibility
 }
 
 export interface DbVehicleShort { // For joined data with Reservations
@@ -597,7 +628,7 @@ const fakeBaseQuery: BaseQueryFn<
 export const supabaseApi = createApi({
   reducerPath: 'supabaseApi',
   baseQuery: fakeBaseQuery,
-  tagTypes: ['Reminders', 'Vehicles', 'TripTypes', 'TripPurposes', 'VehicleTypes', 'VehicleStatuses', 'Reservations', 'Notifications', 'Trips', 'Expenses', 'ExpenseCategories', 'ReminderTypes', 'ReservationStatus', 'Locations', 'POIs', 'StandardRoutes', 'FuelTypes', 'FuelPrices', 'Users', 'Role', 'Department', 'SystemLogs', 'Company', 'ExpenseReceipts', 'UserRequests'],
+  tagTypes: ['Reminders', 'Vehicles', 'TripTypes', 'TripPurposes', 'VehicleTypes', 'VehicleStatuses', 'Reservations', 'Notifications', 'Trips', 'Expenses', 'ExpenseCategories', 'ReminderTypes', 'ReservationStatus', 'Locations', 'POIs', 'StandardRoutes', 'FuelTypes', 'FuelPrices', 'Users', 'Role', 'Department', 'SystemLogs', 'Company', 'ExpenseReceipts', 'UserRequests', 'TravelOrders'],
   endpoints: (builder) => ({
     // Expense Categories
     getExpenseCategories: builder.query<DbExpenseCategory[], void>({
@@ -1501,8 +1532,13 @@ export const supabaseApi = createApi({
       end_time?: string | null;
       start_location_address?: string | null;
       end_location_address?: string | null;
+      distance_km?: number | null;
+      duration_minutes?: number | null;
       purpose_description?: string | null;
       notes?: string | null;
+      path?: any[] | null;
+      pause_details?: any | null;
+      status?: string;
     }>({
       async queryFn(tripData) {
         try {
@@ -1510,7 +1546,7 @@ export const supabaseApi = createApi({
             .from('trips')
             .insert([{
               ...tripData,
-              status: 'IN_PROGRESS',
+              status: tripData.status || 'IN_PROGRESS',
               created_at: new Date().toISOString(),
               updated_at: new Date().toISOString()
             }])
@@ -3334,6 +3370,133 @@ export const supabaseApi = createApi({
       providesTags: ['Hardcoded'],
     }),
 
+    // === TRAVEL ORDERS ===
+
+    // Get active travel order for user
+    getActiveTravelOrder: builder.query<DbTravelOrder | null, { userId: string }>({
+      async queryFn({ userId }) {
+        try {
+          const { data, error } = await supabase
+            .from('travel_orders')
+            .select(`
+              *,
+              users!travel_orders_user_id_fkey(first_name, last_name)
+            `)
+            .eq('user_id', userId)
+            .eq('status', 'active')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+          if (error && error.code !== 'PGRST116') { // PGRST116 is "no rows returned"
+            console.error('Error fetching active travel order:', error);
+            throw error;
+          }
+
+          return { data: data as DbTravelOrder | null };
+        } catch (error) {
+          console.error('Error in getActiveTravelOrder:', error);
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
+        }
+      },
+      providesTags: ['TravelOrders'],
+    }),
+
+    // Create new travel order
+    createTravelOrder: builder.mutation<DbTravelOrder, {
+      user_id: string;
+      company_id: string;
+      purpose?: string;
+      start_date: string;
+    }>({
+      async queryFn(travelOrderData) {
+        try {
+          const { data, error } = await supabase
+            .from('travel_orders')
+            .insert([travelOrderData])
+            .select(`
+              *,
+              users!travel_orders_user_id_fkey(first_name, last_name)
+            `)
+            .single();
+
+          if (error) {
+            console.error('Error creating travel order:', error);
+            throw error;
+          }
+
+          return { data: data as DbTravelOrder };
+        } catch (error) {
+          console.error('Error in createTravelOrder:', error);
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
+        }
+      },
+      invalidatesTags: ['TravelOrders'],
+    }),
+
+    // Update travel order
+    updateTravelOrder: builder.mutation<DbTravelOrder, { travelOrderId: string; updates: Partial<DbTravelOrder> }>({
+      async queryFn({ travelOrderId, updates }) {
+        try {
+          const { data, error } = await supabase
+            .from('travel_orders')
+            .update({
+              ...updates,
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', travelOrderId)
+            .select(`
+              *,
+              users!travel_orders_user_id_fkey(first_name, last_name)
+            `)
+            .single();
+
+          if (error) {
+            console.error('Error updating travel order:', error);
+            throw error;
+          }
+
+          return { data: data as DbTravelOrder };
+        } catch (error) {
+          console.error('Error in updateTravelOrder:', error);
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
+        }
+      },
+      invalidatesTags: ['TravelOrders'],
+    }),
+
+    // Get travel orders for user
+    getTravelOrders: builder.query<DbTravelOrder[], { userId: string; limit?: number }>({
+      async queryFn({ userId, limit = 50 }) {
+        try {
+          const { data, error } = await supabase
+            .from('travel_orders')
+            .select(`
+              *,
+              users!travel_orders_user_id_fkey(first_name, last_name)
+            `)
+            .eq('user_id', userId)
+            .order('created_at', { ascending: false })
+            .limit(limit);
+
+          if (error) {
+            console.error('Error fetching travel orders:', error);
+            throw error;
+          }
+
+          return { data: data as DbTravelOrder[] };
+        } catch (error) {
+          console.error('Error in getTravelOrders:', error);
+          const postgrestError = error as PostgrestError;
+          return { error: { status: postgrestError.code, data: postgrestError.message, originalError: postgrestError } };
+        }
+      },
+      providesTags: ['TravelOrders'],
+    }),
+
   }),
 });
 
@@ -3372,6 +3535,11 @@ export const {
   useCreateReservationMutation,
   useGetPurposeOptionsQuery,
   useGetLocationOptionsQuery,
+  // Travel Orders
+  useGetActiveTravelOrderQuery,
+  useCreateTravelOrderMutation,
+  useUpdateTravelOrderMutation,
+  useGetTravelOrdersQuery,
   // POIs
   useGetPoisQuery,
   useCreatePoiMutation,

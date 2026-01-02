@@ -27,20 +27,24 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
 
 // Import RTK Query hooks
-import { 
-  useGetVehiclesQuery, 
-  useGetTripTypesQuery, 
+import {
+  useGetVehiclesQuery,
+  useGetTripTypesQuery,
   useGetTripPurposesQuery,
   useGetStandardRoutesQuery,
   useGetCurrentUserProfileQuery,
-  useCreateTripMutation, 
-  DbVehicle, 
+  useCreateTripMutation,
+  useCreateTravelOrderMutation,
+  DbVehicle,
   DbTripType,
   DbTripPurpose,
   DbStandardRoute,
-  supabaseApi 
+  supabaseApi
 } from '../../store/api/supabaseApi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastUtils';
+
+// Trip tracking
+import { useTripTracking } from '../../hooks/useTripTracking';
 
 interface TripFormData {
   purpose: string;
@@ -68,6 +72,10 @@ export default function AddTripScreen({ navigation }: any) {
   const { data: standardRoutesData, isLoading: isLoadingRoutes, error: routesError, refetch: refetchRoutes } = useGetStandardRoutesQuery();
   const { data: userProfile } = useGetCurrentUserProfileQuery(user?.user_id || '', { skip: !user?.user_id });
   const [createTrip] = useCreateTripMutation();
+  const [createTravelOrder] = useCreateTravelOrderMutation();
+
+  // Trip tracking hook
+  const tripTracking = useTripTracking();
 
   // Screen colors based on theme
   const screenColors = themeMode === 'dark' ? {
@@ -279,7 +287,7 @@ export default function AddTripScreen({ navigation }: any) {
     setIsLoading(true);
 
     try {
-      const selectedRoute = formData.selectedRouteId ? 
+      const selectedRoute = formData.selectedRouteId ?
         standardRoutesData?.find(r => r.route_id === formData.selectedRouteId) : null;
 
       // Debug selected route
@@ -289,36 +297,70 @@ export default function AddTripScreen({ navigation }: any) {
         console.log('🗺️ End POI:', selectedRoute.end_poi);
       }
 
+      // 1. Create Travel Order first
+      const travelOrderData = {
+        user_id: user.user_id,
+        company_id: user.company_id || '',
+        purpose: formData.purpose.trim(),
+        start_date: new Date().toISOString(),
+        notes: formData.notes.trim() || null,
+        status: 'active',
+      };
+
+      console.log('📋 Creating travel order:', travelOrderData);
+      const travelOrderResult = await createTravelOrder(travelOrderData).unwrap();
+      const travelOrderId = travelOrderResult.id;
+
+      console.log('✅ Travel order created:', travelOrderId);
+
+      // 2. Create Trip within the travel order
       const tripData = {
         user_id: user.user_id,
         vehicle_id: formData.selectedVehicleId!,
+        travel_order_id: travelOrderId,
         trip_type_id: formData.selectedTripTypeId,
         trip_purpose_id: formData.purposeId,
         start_time: new Date().toISOString(),
         end_time: null,
-        start_location_address: formData.useStandardRoute ? 
-          selectedRoute?.start_address_manual || selectedRoute?.start_poi?.address || selectedRoute?.start_poi?.name || 'Unknown Start' : 
+        start_location_address: formData.useStandardRoute ?
+          selectedRoute?.start_address_manual || selectedRoute?.start_poi?.address || selectedRoute?.start_poi?.name || 'Unknown Start' :
           formData.startLocation.trim(),
-        end_location_address: formData.useStandardRoute ? 
-          selectedRoute?.end_address_manual || selectedRoute?.end_poi?.address || selectedRoute?.end_poi?.name || 'Unknown Destination' : 
+        end_location_address: formData.useStandardRoute ?
+          selectedRoute?.end_address_manual || selectedRoute?.end_poi?.address || selectedRoute?.end_poi?.name || 'Unknown Destination' :
           formData.endLocation.trim(),
         purpose_description: formData.purpose.trim(),
         notes: formData.notes.trim() || null,
         status: 'IN_PROGRESS',
-        // GPS tracking will be handled separately
         route_details_json: null,
       };
 
-      await createTrip(tripData).unwrap();
-      
-      // Invalidate cache to refresh trips list
-      dispatch(supabaseApi.util.invalidateTags(['Trips']));
-      
-      showSuccessToast(t('trip_started_immediately', 'Your trip has been successfully started. End it manually when you arrive at your destination.'));
+      console.log('🚗 Creating trip:', tripData);
+      const tripResult = await createTrip(tripData).unwrap();
+      const tripId = tripResult.trip_id;
+
+      console.log('✅ Trip created:', tripId);
+
+      // 3. Start GPS tracking
+      console.log('🎯 Starting GPS tracking for trip:', tripId);
+      await tripTracking.startTrip({
+        userId: user.user_id,
+        purposeId: formData.purposeId,
+        routeId: formData.selectedRouteId,
+        tripId: tripId,
+        orderId: travelOrderId,
+      });
+
+      // Invalidate cache to refresh data
+      dispatch(supabaseApi.util.invalidateTags(['Trips', 'TravelOrders']));
+
+      showSuccessToast(t('trip_started_successfully', 'Trip started successfully! GPS tracking is now active.'));
+
+      // Navigate back to home screen where ActiveTripCard will be displayed
       navigation.goBack();
+
     } catch (error: any) {
-      console.error('Error creating trip:', error);
-      showErrorToast(t('failed_create_trip', 'Failed to create trip. Please try again.'));
+      console.error('❌ Error starting trip:', error);
+      showErrorToast(t('trip_start_failed', 'Failed to start trip. Please try again.'));
     } finally {
       setIsLoading(false);
     }

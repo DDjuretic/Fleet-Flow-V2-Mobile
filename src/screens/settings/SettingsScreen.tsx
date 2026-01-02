@@ -36,8 +36,6 @@ export default function SettingsScreen({ navigation }: any) {
 
   const [showLanguagePicker, setShowLanguagePicker] = useState(false);
 
-
-
   const screenColors = currentTheme === 'dark' ? {
     background: Colors.DARK.background,
     text: Colors.DARK.text,
@@ -158,24 +156,44 @@ export default function SettingsScreen({ navigation }: any) {
       icon: 'cash-outline', 
       action: handleToggleCurrency,
     },
-    { 
-      id: '2', 
-      title: t('notifications', 'Notifications'), 
-      icon: 'notifications-outline', 
-      screen: 'NotificationsSettings' 
+    {
+      id: '2',
+      title: t('notifications', 'Notifications'),
+      icon: 'notifications-outline',
+      screen: 'NotificationsSettings'
     },
-
-    { 
-      id: '6', 
-      title: t('change_password', 'Change Password'), 
-      icon: 'lock-closed-outline', 
-      screen: 'ChangePassword' 
+    {
+      id: 'heatmap',
+      title: `${t('heat_map', 'Heat Map')}: ${t('enabled', 'Enabled')}`,
+      icon: 'color-palette-outline',
+      action: () => {
+        // TODO: Implement heat map toggle
+        Alert.alert(t('coming_soon', 'Coming Soon'), t('feature_in_development', 'This feature is in development'));
+      },
     },
-    { 
-      id: '7', 
-      title: t('help_support', 'Help & Support'), 
-      icon: 'help-buoy-outline', 
-      screen: 'HelpSupport' 
+    {
+      id: 'osrm',
+      title: t('osrm_settings', 'OSRM Settings'),
+      icon: 'map-outline',
+      screen: 'OSRMSettings'
+    },
+    {
+      id: 'speed_limit',
+      title: t('speed_limit_settings', 'Speed Limit Settings'),
+      icon: 'speedometer-outline',
+      screen: 'SpeedLimitSettings'
+    },
+    {
+      id: '6',
+      title: t('change_password', 'Change Password'),
+      icon: 'lock-closed-outline',
+      screen: 'ChangePassword'
+    },
+    {
+      id: '7',
+      title: t('help_support', 'Help & Support'),
+      icon: 'help-buoy-outline',
+      screen: 'HelpSupport'
     },
   ];
 
@@ -237,14 +255,13 @@ export default function SettingsScreen({ navigation }: any) {
           />
         </View>
       </ScrollView>
-      
+
       <LanguagePickerModal
         visible={showLanguagePicker}
         onClose={() => setShowLanguagePicker(false)}
         onSelectLanguage={handleSelectLanguage}
         currentLanguage={currentLanguage}
       />
-      
 
     </SafeAreaView>
   );

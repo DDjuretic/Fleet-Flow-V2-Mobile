@@ -1,32 +1,43 @@
 {
   "expo": {
-    "name": "HelloWorld",
-    "slug": "expo-template-blank-typescript",
+    "name": "Fleet Flow",
+    "slug": "fleet-flow-v2",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "splash": {
-      "image": "./assets/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "me.fleetflow.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Fleet Flow needs your location to track trips and calculate fuel efficiency.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Fleet Flow needs background location to track your trip even when the app is closed.",
+        "NSLocationAlwaysUsageDescription": "Fleet Flow needs background location to track your trip even when the app is closed.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_BACKGROUND_LOCATION",
+        "FOREGROUND_SERVICE"
+      ],
       "config": {
         "googleMaps": {
           "apiKey": "YOUR_API_KEY_HERE"
         }
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.HelloWorld"
+      "package": "me.fleetflow.app"
     },
     "web": {
       "favicon": "./assets/favicon.png"

@@ -71,11 +71,20 @@ const TripMapScreen: React.FC<Props> = ({ route, navigation }) => {
   // Find the specific trip
   const tripDetails = tripsData?.find(trip => trip.trip_id === tripId);
 
-  // Load navigation route when trip details are available
+  // Load navigation route or saved path when trip details are available
   useEffect(() => {
-    const loadNavigationRoute = async () => {
-      if (!tripDetails?.start_location_address || !tripDetails?.end_location_address) {
-        console.log('📍 Missing trip addresses for routing');
+    const loadRouteData = async () => {
+      if (!tripDetails) return;
+
+      // If we have saved path data, use it directly!
+      if (tripDetails.path && Array.isArray(tripDetails.path) && tripDetails.path.length > 0) {
+        console.log('✅ Using saved GPS path data:', tripDetails.path.length, 'points');
+        setRouteData(tripDetails.path);
+        return;
+      }
+
+      if (!tripDetails.start_location_address || !tripDetails.end_location_address) {
+        console.log('📍 Missing trip addresses for routing and no saved path');
         return;
       }
 
@@ -157,7 +166,7 @@ const TripMapScreen: React.FC<Props> = ({ route, navigation }) => {
       }
     };
 
-    loadNavigationRoute();
+    loadRouteData();
   }, [tripDetails]);
 
   const formatDate = (dateString?: string) => {

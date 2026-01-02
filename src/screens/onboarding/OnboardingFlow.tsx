@@ -229,7 +229,7 @@ const OnboardingFlow: React.FC = () => {
         }
 
         const vehicleData = {
-          company_id: user.company_id, // Use company_id from auth context
+          company_id: user.company_id || null, // For private vehicles, company_id can be null
           vehicle_type_id: vehicleTypes.vehicle_type_id,
           vehicle_status_id: vehicleStatuses.vehicle_status_id,
           fuel_type_id: fuelTypes?.fuel_type_id || null, // Handle potentially null fuel type
@@ -242,7 +242,7 @@ const OnboardingFlow: React.FC = () => {
           is_private_vehicle: true,
           private_owner_id: user.user_id,
           // Default values for required fields
-          current_mileage: 0,
+          current_mileage: parseFloat(userData.currentMileage) || 0,
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString()
         };

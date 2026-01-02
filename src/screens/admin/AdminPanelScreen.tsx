@@ -87,6 +87,15 @@ const AdminPanelScreen: React.FC = () => {
       screen: 'AdminRoleManagement',
       color: screenColors.primary,
       isActive: true
+    },
+    {
+      id: 'departments',
+      title: t('admin_department_management.title', 'Department Management'),
+      description: t('admin_department_management.description', 'Manage company departments and hierarchy'),
+      icon: 'business-outline',
+      screen: 'DepartmentManagement',
+      color: '#9B59B6',
+      isActive: true
     }
   ];
 

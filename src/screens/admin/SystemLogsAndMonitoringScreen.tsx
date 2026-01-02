@@ -140,7 +140,7 @@ export default function SystemLogsAndMonitoringScreen({ navigation }: SystemLogs
 
   const renderLogItem = ({ item }: { item: DbSystemLog }) => {
     const severityColor = getSeverityColor(item.severity);
-    const metadata = item.metadata || {};
+    const metadata = (item.metadata as any) || {};
 
     return (
       <TouchableOpacity 

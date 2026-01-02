@@ -41,6 +41,11 @@ interface DepartmentHierarchy {
 
 // Default department hierarchy
 const DEPARTMENT_HIERARCHY: DepartmentHierarchy = {
+  'Executive': {
+    defaultRole: 'general_manager',
+    permissions: ['*'], // All permissions except system admin
+    canManage: ['Management', 'Finance', 'Operations', 'Warehouse', 'Retail']
+  },
   'Management': {
     defaultRole: 'manager',
     permissions: ['dashboard:admin', 'users:manage', 'vehicles:manage', 'reports:view'],
@@ -77,10 +82,22 @@ const AUTO_ASSIGNMENT_RULES: AutoAssignmentRule[] = [
     roles: ['admin']
   },
   {
+    trigger: 'role',
+    condition: 'general_manager',
+    permissions: ['*'], // all permissions except system admin functions
+    roles: ['general_manager']
+  },
+  {
     trigger: 'department',
     condition: 'Management',
     permissions: ['dashboard:admin', 'users:manage', 'vehicles:manage'],
     roles: ['manager']
+  },
+  {
+    trigger: 'position',
+    condition: 'General Manager',
+    permissions: ['*'], // All permissions
+    roles: ['general_manager']
   },
   {
     trigger: 'position',
@@ -521,6 +538,80 @@ class RoleService {
       console.error('Error checking user management permission:', error);
       return false;
     }
+  }
+
+  /**
+   * Bulk assign role to multiple users
+   */
+  async bulkAssignRole(userIds: string[], roleId: string): Promise<{ success: string[], failed: string[] }> {
+    const results = { success: [] as string[], failed: [] as string[] };
+
+    for (const userId of userIds) {
+      try {
+        const success = await this.assignRole(userId, roleId);
+        if (success) {
+          results.success.push(userId);
+        } else {
+          results.failed.push(userId);
+        }
+      } catch (error) {
+        console.error(`Failed to assign role to user ${userId}:`, error);
+        results.failed.push(userId);
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Bulk remove role from multiple users
+   */
+  async bulkRemoveRole(userIds: string[], roleId: string): Promise<{ success: string[], failed: string[] }> {
+    const results = { success: [] as string[], failed: [] as string[] };
+
+    for (const userId of userIds) {
+      try {
+        const success = await this.removeRole(userId, roleId);
+        if (success) {
+          results.success.push(userId);
+        } else {
+          results.failed.push(userId);
+        }
+      } catch (error) {
+        console.error(`Failed to remove role from user ${userId}:`, error);
+        results.failed.push(userId);
+      }
+    }
+
+    return results;
+  }
+
+  /**
+   * Get role hierarchy (which roles can manage which)
+   */
+  getRoleHierarchy(): { [role: string]: { level: number, canManage: string[] } } {
+    return {
+      'admin': { level: 1, canManage: ['general_manager', 'manager', 'dispatcher', 'finance', 'driver'] },
+      'general_manager': { level: 2, canManage: ['manager', 'dispatcher', 'finance', 'driver'] },
+      'manager': { level: 3, canManage: ['dispatcher', 'finance', 'driver'] },
+      'dispatcher': { level: 4, canManage: ['driver'] },
+      'finance': { level: 4, canManage: [] },
+      'driver': { level: 5, canManage: [] }
+    };
+  }
+
+  /**
+   * Check if one role can manage another role
+   */
+  canRoleManageRole(managerRole: string, targetRole: string): boolean {
+    const hierarchy = this.getRoleHierarchy();
+    const managerLevel = hierarchy[managerRole]?.level;
+    const targetLevel = hierarchy[targetRole]?.level;
+
+    if (!managerLevel || !targetLevel) return false;
+
+    // Higher level (lower number) can manage lower levels (higher numbers)
+    return managerLevel < targetLevel;
   }
 }
 

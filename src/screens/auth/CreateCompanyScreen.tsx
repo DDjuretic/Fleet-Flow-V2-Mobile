@@ -29,8 +29,18 @@ const CreateCompanyScreen = () => {
       // const { error } = await supabase.functions.invoke('create-company-for-user', {
       //   body: { companyName: companyName.trim() },
       // });
+      const { data: session } = await supabase.auth.getSession();
+      if (!session?.session?.user?.id) {
+        throw new Error('User not authenticated');
+      }
+
+      // Call RPC with explicit authorization
       const { error } = await supabase.rpc('create_company_and_assign_admin', {
         company_name: companyName.trim()
+      }, {
+        headers: {
+          Authorization: `Bearer ${session.session.access_token}`
+        }
       });
 
       if (error) {

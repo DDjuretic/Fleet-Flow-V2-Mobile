@@ -1,0 +1,1 @@
+INSERT INTO public.users (user_id, email, first_name, last_name, onboarding_status, created_at, updated_at, is_active) VALUES ('5936535c-f839-468c-b44d-d53d400ccf62', 'admin@fleetflow.me', 'Danko', 'Djuretic', 'pending', NOW(), NOW(), true) ON CONFLICT (user_id) DO NOTHING;

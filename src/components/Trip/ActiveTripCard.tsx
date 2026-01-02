@@ -13,7 +13,7 @@ import {
   LayoutChangeEvent
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { WebView } from 'react-native-webview';
+import WebMapView from '../Map/WebMapView';
 import Colors from '../../constants/Colors';
 import { geocodeAddress, GeocodeResult as _GeocodeResult, reverseGeocode } from '../../services/geocodingService';
 import { LocationCoordinates } from '../../services/locationService';
@@ -585,142 +585,6 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
     );
   };
 
-  // Generate simple map HTML
-  const mapHTML = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <meta charset="utf-8" />
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Route Map</title>
-      <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-      <style>
-        body { margin: 0; padding: 0; }
-        #map { height: 100vh; width: 100vw; background-color: #f0f0f0; }
-        .route-line { color: ${screenColors.primary}; weight: 6; opacity: 0.8; }
-        .start-marker { 
-          background-color: #4CAF50; 
-          color: white; 
-          border: 2px solid white;
-          border-radius: 50%;
-          width: 30px;
-          height: 30px;
-          text-align: center;
-          line-height: 26px;
-          font-weight: bold;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-        .end-marker { 
-          background-color: #F44336; 
-          color: white; 
-          border: 2px solid white;
-          border-radius: 50%;
-          width: 30px;
-          height: 30px;
-          text-align: center;
-          line-height: 26px;
-          font-weight: bold;
-          box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-        }
-      </style>
-    </head>
-    <body>
-      <div id="map"></div>
-      <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-      <script>
-        try {
-          // Initialize map
-          const map = L.map('map').setView([42.4502, 19.2728], 12);
-          
-          // Add OpenStreetMap tiles
-          L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap contributors',
-            maxZoom: 19
-          }).addTo(map);
-          
-          // Route coordinates
-           const routeCoords = [${routeCoordinates.map(coord => `[${coord.latitude}, ${coord.longitude}]`).join(',')}];
-           
-           if (routeCoords.length > 1) {
-             // Draw route line
-             const routeLine = L.polyline(routeCoords, {
-               color: '${screenColors.primary}',
-               weight: 6,
-               opacity: 0.8
-             }).addTo(map);
-             
-             // Start marker
-             L.marker(routeCoords[0], {
-               icon: L.divIcon({
-                 className: 'start-marker',
-                 html: 'S',
-                 iconSize: [30, 30],
-                 iconAnchor: [15, 15]
-               })
-             }).addTo(map).bindPopup('Start: ${getShortDisplayName(trip.start_location_address || '')}');
-             
-             // End marker
-             L.marker(routeCoords[routeCoords.length - 1], {
-               icon: L.divIcon({
-                 className: 'end-marker',
-                 html: 'E',
-                 iconSize: [30, 30],
-                 iconAnchor: [15, 15]
-               })
-             }).addTo(map).bindPopup('End: ${getShortDisplayName(trip.end_location_address || '')}');
-             
-             // Fit map to route
-             map.fitBounds(routeLine.getBounds(), { padding: [20, 20] });
-           } else if (routeCoords.length === 1) {
-             // Single point - just show marker
-             L.marker(routeCoords[0], {
-               icon: L.divIcon({
-                 className: 'start-marker',
-                 html: 'S',
-                 iconSize: [30, 30],
-                 iconAnchor: [15, 15]
-               })
-             }).addTo(map).bindPopup('Location');
-             map.setView(routeCoords[0], 14);
-           } else {
-             // No coordinates - fallback to Podgorica center
-             console.log('No route coordinates, centering on Podgorica');
-             map.setView([42.4502, 19.2728], 12);
-             
-             // Add fallback markers if we have geocoded coordinates
-             if (${startGeocodedCoords ? `[${startGeocodedCoords.latitude}, ${startGeocodedCoords.longitude}]` : 'null'}) {
-               L.marker([${startGeocodedCoords ? startGeocodedCoords.latitude : 42.4307}, ${startGeocodedCoords ? startGeocodedCoords.longitude : 19.2478}], {
-                 icon: L.divIcon({
-                   className: 'start-marker',
-                   html: 'S',
-                   iconSize: [30, 30],
-                   iconAnchor: [15, 15]
-                 })
-               }).addTo(map).bindPopup('H.Office');
-               
-               L.marker([42.4697, 19.3047], {
-                 icon: L.divIcon({
-                   className: 'end-marker',
-                   html: 'E',
-                   iconSize: [30, 30],
-                   iconAnchor: [15, 15]
-                 })
-               }).addTo(map).bindPopup('Studio Mouse');
-             }
-           }
-          
-          // Notify React Native that map is ready
-          window.ReactNativeWebView?.postMessage('mapReady');
-          
-        } catch (error) {
-          console.error('Map initialization error:', error);
-          window.ReactNativeWebView?.postMessage('mapError');
-        }
-      </script>
-    </body>
-    </html>
-  `;
-
   // Debug log za koordinate
   console.log('🗺️ ActiveTripCard Coordinates Debug:', {
     startGeocodedCoords: startGeocodedCoords ? `${startGeocodedCoords.latitude}, ${startGeocodedCoords.longitude}` : null,
@@ -851,16 +715,15 @@ export default function ActiveTripCard({ trip, onEndTrip, onViewTrip, onNavigate
             <Text style={[styles.loadingText, { color: screenColors.text }]}>Loading route...</Text>
           </View>
         )}
-        <WebView
-          source={{ html: mapHTML }}
+        <WebMapView
           style={styles.map}
-          onMessage={(event) => {
-            if (event.nativeEvent.data === 'mapReady') {
-              setIsMapLoaded(true);
-            } else if (event.nativeEvent.data === 'mapError') {
-              console.error('Map error:', event.nativeEvent.data);
-            }
-          }}
+          showUserLocation={true}
+          route={routeCoordinates}
+          zoomLevel={12}
+          navigationMode={true}
+          followUserLocation={true}
+          showNavigationControls={false}
+          showLayerControls={false}
         />
       </View>
 

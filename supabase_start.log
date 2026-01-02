@@ -1,0 +1,77 @@
+ mailpit Skipped - Image is already present locally 
+ realtime Skipped - Image is already present locally 
+ imgProxy Skipped - Image is already present locally 
+ studio Skipped - Image is already present locally 
+ vector Skipped - Image is already present locally 
+ storage Skipped - Image is already present locally 
+ analytics Skipped - Image is already present locally 
+ db Skipped - Image is already present locally 
+ api Skipped - Image is already present locally 
+ edgeRuntime Skipped - Image is already present locally 
+ pgmeta Skipped - Image is already present locally 
+ gateway Skipped - Image is already present locally 
+ auth Skipped - Image is already present locally 
+Starting database...
+Initialising schema...
+Seeding globals from roles.sql...
+Applying migration 001_complete_schema.sql...
+NOTICE (42710): extension "uuid-ossp" already exists, skipping
+NOTICE (00000): policy "Users can update vehicles" for relation "vehicles" does not exist, skipping
+NOTICE (00000): policy "Users can insert vehicles" for relation "vehicles" does not exist, skipping
+NOTICE (00000): policy "Users can delete vehicles" for relation "vehicles" does not exist, skipping
+NOTICE (00000): policy "Users can view all trips" for relation "trips" does not exist, skipping
+NOTICE (00000): policy "Users can insert trips" for relation "trips" does not exist, skipping
+NOTICE (00000): policy "Users can update trips" for relation "trips" does not exist, skipping
+NOTICE (00000): policy "Users can delete trips" for relation "trips" does not exist, skipping
+NOTICE (00000): policy "Users can view all reservations" for relation "reservations" does not exist, skipping
+NOTICE (00000): trigger "on_auth_user_created" for relation "auth.users" does not exist, skipping
+WARNING (01000): permission denied to analyze "pg_authid", skipping it
+WARNING (01000): permission denied to analyze "pg_subscription", skipping it
+WARNING (01000): permission denied to analyze "pg_database", skipping it
+WARNING (01000): permission denied to analyze "pg_db_role_setting", skipping it
+WARNING (01000): permission denied to analyze "pg_tablespace", skipping it
+WARNING (01000): permission denied to analyze "pg_auth_members", skipping it
+WARNING (01000): permission denied to analyze "pg_shdepend", skipping it
+WARNING (01000): permission denied to analyze "pg_shdescription", skipping it
+WARNING (01000): permission denied to analyze "pg_replication_origin", skipping it
+WARNING (01000): permission denied to analyze "pg_shseclabel", skipping it
+WARNING (01000): permission denied to analyze "pg_parameter_acl", skipping it
+Applying migration 002_fix_policies_and_storage.sql...
+NOTICE (00000): policy "Avatar images are publicly accessible" for relation "storage.objects" does not exist, skipping
+NOTICE (00000): policy "Anyone can upload an avatar" for relation "storage.objects" does not exist, skipping
+NOTICE (00000): policy "Anyone can update own avatar" for relation "storage.objects" does not exist, skipping
+NOTICE (42701): column "route_details_json" of relation "trips" already exists, skipping
+NOTICE (42701): column "module" of relation "permissions" already exists, skipping
+Applying migration 003_create_admin_function.sql...
+Applying migration 004_fix_companies_rls.sql...
+NOTICE (00000): policy "Allow authenticated users to read companies" for relation "companies" does not exist, skipping
+NOTICE (00000): policy "Allow authenticated users to update companies" for relation "companies" does not exist, skipping
+NOTICE (00000): policy "Allow users to read their company" for relation "companies" does not exist, skipping
+NOTICE (00000): policy "Allow users to update their company" for relation "companies" does not exist, skipping
+Applying migration 005_create_backup_system.sql...
+Applying migration 008_performance_optimization.sql...
+NOTICE (42P07): relation "idx_trips_start_time" already exists, skipping
+NOTICE (00000): ✅ Performance optimization migration 008 completed successfully!
+NOTICE (00000): 📊 Created 36 indexes for query optimization
+NOTICE (00000): 🚀 Application performance should be significantly improved
+Applying migration 20240628220000_create_rpc_for_company.sql...
+Applying migration 20240628230000_fix_handle_new_user_trigger.sql...
+Applying migration 20240725100000_add_travel_order_and_fuel_features.sql...
+Stopping containers...
+ERROR: relation "public.profiles" does not exist (SQLSTATE 42P01)                                            
+At statement: 6                                                                                              
+-- Snapshot of fuel parameters used for trip calculation                                                     
+                                                                                                             
+-- Add RLS policies for trips (example, will need full policies)                                             
+-- Assuming existing RLS for trips will need to be adapted to include travel_order_id in checks if applicable
+-- For now, ensure existing policies are not broken by the new column or adapt if needed for multi-tenancy.  
+-- Example of adapting:                                                                                      
+-- DROP POLICY IF EXISTS "Users can view their own trips" ON public.trips;                                   
+-- CREATE POLICY "Users can view their own trips" ON public.trips                                            
+--   FOR SELECT USING (auth.uid() = user_id);                                                                
+                                                                                                             
+-- Modify profiles table                                                                                     
+ALTER TABLE public.profiles                                                                                  
+ADD COLUMN average_consumption DECIMAL(10,2) DEFAULT 8.0, -- Default fuel consumption (L/100km)              
+ADD COLUMN fuel_price DECIMAL(10,2) DEFAULT 1.50                                                             
+Try rerunning the command with --debug to troubleshoot the error.

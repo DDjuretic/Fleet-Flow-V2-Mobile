@@ -39,7 +39,7 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
   currentLanguage,
 }) => {
   const { t } = useTranslation();
-  const currentTheme = useSelector((state: RootState) => state.theme.mode);
+  const currentTheme = useSelector((state: RootState) => state.theme?.mode || 'light');
   
   const theme = {
     colors: currentTheme === 'dark' ? {
@@ -109,8 +109,9 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
   return (
     <Modal
       visible={visible}
-      transparent
+      transparent={true}
       animationType="slide"
+      presentationStyle="formSheet"
       onRequestClose={onClose}
     >
       <View style={styles.modalOverlay}>
@@ -119,16 +120,13 @@ export const LanguagePickerModal: React.FC<LanguagePickerModalProps> = ({
             <Text style={[styles.modalTitle, { color: theme.colors.text }]}>
               {t('language')}
             </Text>
-            <TouchableOpacity
-              style={[styles.closeButton, { backgroundColor: theme.colors.surface }]}
-              onPress={onClose}
-            >
+            <TouchableOpacity onPress={onClose}>
               <Text style={[styles.closeButtonText, { color: theme.colors.text }]}>
                 ✕
               </Text>
             </TouchableOpacity>
           </View>
-          
+
           <FlatList
             data={LANGUAGES}
             renderItem={renderLanguageItem}
@@ -168,11 +166,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   closeButton: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 5,
   },
   closeButtonText: {
     fontSize: 16,

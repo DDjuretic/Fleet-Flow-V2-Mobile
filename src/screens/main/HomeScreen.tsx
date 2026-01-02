@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
   Image,
   Dimensions,
   ActivityIndicator,
+  Alert,
+  Animated,
 } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -24,21 +26,38 @@ import { RootState } from '../../store/rootReducer';
 
 // Components
 import ActiveTripCard from '../../components/Trip/ActiveTripCard';
+import WeatherBanner from '../../components/WeatherBanner';
+import NativeMapView from '../../components/Map/NativeMapView';
+
+// Trip tracking
+import { useTripTracking } from '../../hooks/useTripTracking';
+
+// Modal components for map controls
+import TravelOrderModal from '../../components/Map/TravelOrderModal';
+import TripModal from '../../components/Map/TripModal';
+import PurposeModal from '../../components/Map/PurposeModal';
 
 // API
 import {
   useGetTripsQuery,
-  useEndTripMutation, 
+  useEndTripMutation,
+  useCreateTripMutation,
   useGetRemindersQuery,
   useGetReservationsQuery,
   useGetPendingReservationsQuery,
   useGetCurrentUserProfileQuery,
+  useGetActiveTravelOrderQuery,
+  useCreateTravelOrderMutation,
+  useUpdateTravelOrderMutation,
   DbTrip,
   DbReminder,
   DbReservation,
+  DbTravelOrder,
   useUpdateTripMutation,
 } from '../../store/api/supabaseApi';
 import { showSuccessToast, showErrorToast } from '../../utils/toastUtils';
+import { supabase } from '../../lib/supabase';
+import { calculateBearing, fetchSpeedLimitFromServer, generateHeatMapSegments, PathSegment } from '../../utils/location';
 
 // Types
 interface User {
@@ -84,6 +103,28 @@ function HomeScreen({ navigation }: any) {
   const { user, session, signOut } = useAuth();
   const { t } = useTranslation();
   const themeMode = useSelector((state: RootState) => state.theme.mode);
+
+  // Trip tracking
+  const tripTracking = useTripTracking();
+
+  // Map refs and state
+  const mapRef = useRef<any>(null);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [currentRegion, setCurrentRegion] = useState({
+    latitude: 42.4307,
+    longitude: 19.2478,
+    latitudeDelta: 0.01,
+    longitudeDelta: 0.01,
+  });
+
+  // Heat map state
+  const [heatMapSegments, setHeatMapSegments] = useState<PathSegment[]>([]);
+  const [heatMapEnabled, setHeatMapEnabled] = useState(true);
+
+  // Modal states
+  const [showTravelOrderModal, setShowTravelOrderModal] = useState(false);
+  const [showTripModal, setShowTripModal] = useState(false);
+  const [showPurposeModal, setShowPurposeModal] = useState(false);
   
   // 🚀 OPTIMIZACIJA: Lazy loading sa prioritetima - POBOLJŠANO
   const [loadSecondaryData, setLoadSecondaryData] = useState(false);
@@ -146,8 +187,37 @@ function HomeScreen({ navigation }: any) {
   }, [pendingCount]);
   
   const [endTrip, { isLoading: endingTrip }] = useEndTripMutation();
+  const [createTrip, { isLoading: creatingTrip }] = useCreateTripMutation();
 
   const [updateTrip, { isLoading: updatingTrip }] = useUpdateTripMutation();
+
+  // Travel Order management
+  const { data: activeTravelOrder } = useGetActiveTravelOrderQuery(
+    user?.user_id ? { userId: user.user_id } : { userId: '' },
+    { skip: !user?.user_id }
+  );
+  const [createTravelOrder] = useCreateTravelOrderMutation();
+  const [updateTravelOrder] = useUpdateTravelOrderMutation();
+
+  // Handle trip ending
+  const handleEndTrip = useCallback(async () => {
+    try {
+      if (!tripTracking.activeTrip?.id) {
+        console.error('No active trip to end');
+        return;
+      }
+
+      console.log('Ending trip:', tripTracking.activeTrip.id);
+
+      await tripTracking.endTrip();
+
+      showSuccessToast(t('trip.ended', 'Trip ended successfully'));
+
+    } catch (error) {
+      console.error('Error ending trip:', error);
+      showErrorToast(t('trip.end_failed', 'Failed to end trip'));
+    }
+  }, [tripTracking.activeTrip?.id, tripTracking, t]);
 
   // 🚀 OPTIMIZACIJA: Memoized colors
   const screenColors = useMemo(() => themeMode === 'dark' ? {
@@ -192,13 +262,13 @@ function HomeScreen({ navigation }: any) {
 
   const [isLoading, setIsLoading] = useState(false);
   
-  // 🚀 OPTIMIZACIJA: Memoized active trip
-  const activeTrip = useMemo(() => tripsData?.find(trip => 
-    trip.status?.toLowerCase() === 'active' || 
-    trip.status?.toLowerCase() === 'in_progress' ||
-    trip.status?.toLowerCase() === 'started' ||
-    trip.status?.toLowerCase() === 'planned'
-  ) || null, [tripsData]);
+  // 🚀 OPTIMIZACIJA: Show active trip when GPS tracking is active
+  const activeTrip = useMemo(() => {
+    if (!tripTracking.isTracking) return null;
+
+    // Find the trip in our data that matches the active tracking
+    return tripsData?.find(trip => trip.trip_id === tripTracking.activeTravelOrder?.id) || null;
+  }, [tripTracking.isTracking, tripTracking.activeTravelOrder?.id, tripsData]);
 
   const convertDbReminderToReminder = (dbReminder: DbReminder): Reminder => {
     return {
@@ -282,6 +352,23 @@ function HomeScreen({ navigation }: any) {
     }
   }, [userProfileData?.first_name, userProfileData?.avatar_url]);
 
+  // Update heat map when tracking path changes
+  useEffect(() => {
+    if (tripTracking.isTracking && tripTracking.path.length > 1 && heatMapEnabled) {
+      const pathWithSpeed = tripTracking.path.map(p => ({
+        latitude: p.latitude,
+        longitude: p.longitude,
+        timestamp: p.timestamp,
+        speed: tripTracking.currentSpeed || 0
+      }));
+
+      const segments = generateHeatMapSegments(pathWithSpeed, pathWithSpeed, tripTracking.currentSpeed || 50);
+      setHeatMapSegments(segments);
+    } else {
+      setHeatMapSegments([]);
+    }
+  }, [tripTracking.path, tripTracking.isTracking, tripTracking.currentSpeed, heatMapEnabled]);
+
   const fetchAllData = async () => {
     setIsLoading(true);
     setLoadSecondaryData(true); // Force load secondary data
@@ -343,6 +430,114 @@ function HomeScreen({ navigation }: any) {
     return t('hi', 'Hi');
   };
 
+  // Step-by-step trip creation flow
+  const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+  const [selectedRoute, setSelectedRoute] = useState<any>(null);
+  const [selectedPurpose, setSelectedPurpose] = useState<string>('');
+
+  // Modal handlers for step-by-step flow
+  const handleStartNewTripFlow = useCallback(() => {
+    // Reset selections
+    setSelectedVehicle(null);
+    setSelectedRoute(null);
+    setSelectedPurpose('');
+
+    // Start with vehicle selection
+    setShowTripModal(true);
+  }, []);
+
+  const handleVehicleSelected = useCallback((vehicle: any) => {
+    setSelectedVehicle(vehicle);
+    setShowTripModal(false);
+
+    // Next: Route selection
+    setShowTravelOrderModal(true);
+  }, []);
+
+  const handleRouteSelected = useCallback((route: any) => {
+    setSelectedRoute(route);
+    setShowTravelOrderModal(false);
+
+    // Next: Purpose selection
+    setShowPurposeModal(true);
+  }, []);
+
+  const handlePurposeSelected = useCallback((purpose: string) => {
+    setSelectedPurpose(purpose);
+    setShowPurposeModal(false);
+
+    // Start trip with all selections
+    handleStartTrip({
+      vehicle: selectedVehicle,
+      route: selectedRoute,
+      purpose: purpose
+    });
+  }, [selectedVehicle, selectedRoute]);
+
+  const handleStartTrip = useCallback(async (tripData: any) => {
+    try {
+      console.log("Starting trip with:", tripData);
+
+      // Create travel order first if needed
+      if (!tripTracking.activeTravelOrder) {
+        // Create travel order
+        const travelOrderData = await createTravelOrder({
+          purpose: tripData.purpose,
+          vehicle_id: tripData.vehicle.vehicle_id,
+          route_id: tripData.route?.route_id,
+        }).unwrap();
+
+        console.log("Created travel order:", travelOrderData);
+      }
+
+      // Start trip directly using trip tracking hook
+      const routeData = {
+        userId: user?.user_id || '',
+        purposeId: tripData.purpose,
+        routeId: tripData.route?.route_id,
+        tripId: `trip_${Date.now()}`, // Generate temp trip ID
+        orderId: tripTracking.activeTravelOrder?.id || `order_${Date.now()}`,
+      };
+
+      await tripTracking.startTrip(routeData);
+
+      console.log("Trip started successfully");
+
+    } catch (error) {
+      console.error("Error starting trip:", error);
+      showErrorToast(t("trip_start_error", "Failed to start trip"));
+    }
+  }, [tripTracking.activeTravelOrder, tripTracking, user?.user_id, createTravelOrder, t]);
+
+  // Map control handlers
+  const handleZoomIn = useCallback(() => {
+    const newRegion = {
+      ...currentRegion,
+      latitudeDelta: currentRegion.latitudeDelta / 2,
+      longitudeDelta: currentRegion.longitudeDelta / 2,
+    };
+    setCurrentRegion(newRegion);
+    mapRef.current?.animateToRegion(newRegion, 300);
+  }, [currentRegion]);
+
+  const handleZoomOut = useCallback(() => {
+    const newRegion = {
+      ...currentRegion,
+      latitudeDelta: currentRegion.latitudeDelta * 2,
+      longitudeDelta: currentRegion.longitudeDelta * 2,
+    };
+    setCurrentRegion(newRegion);
+    mapRef.current?.animateToRegion(newRegion, 300);
+  }, [currentRegion]);
+
+  // Speed color function for speed indicator
+  const getSpeedColor = (speed: number): string => {
+    if (speed > 100) return screenColors.danger;      // Over 100 km/h - Red
+    if (speed > 80) return '#FF6B35';                 // Over 80 km/h - Orange
+    if (speed > 60) return screenColors.warning;     // Over 60 km/h - Yellow
+    return screenColors.primary;                      // Normal speed - Blue
+  };
+
   if (activeTrip) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: screenColors.background }]}>
@@ -365,7 +560,19 @@ function HomeScreen({ navigation }: any) {
               )}
             </TouchableOpacity>
             <TouchableOpacity onPress={handleSettingsPress} style={styles.headerIcon}>
-              <Ionicons name="settings-outline" size={26} color={screenColors.text} />
+              {userProfile.avatar ? (
+                <Image
+                  source={{ uri: userProfile.avatar }}
+                  style={styles.headerAvatar}
+                  defaultSource={require('../../../assets/images/default-avatar.png')}
+                />
+              ) : (
+                <View style={[styles.headerAvatarFallback, { backgroundColor: screenColors.primary }]}>
+                  <Text style={styles.headerAvatarInitials}>
+                    {userProfile.name.charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -439,7 +646,7 @@ function HomeScreen({ navigation }: any) {
       <View style={styles.headerContainer}>
         <View style={styles.headerLeft}>
           <Ionicons name="car-sport-outline" size={28} color={screenColors.primary} />
-                      <Text style={styles.headerTitle}>{t('fleet_flow', 'Fleet Flow')}</Text>
+          <Text style={styles.headerTitle}>{t('fleet_flow', 'Fleet Flow')}</Text>
         </View>
         <View style={styles.headerRight}>
           <TouchableOpacity onPress={handleNotificationsPress} style={styles.headerIcon}>
@@ -466,97 +673,155 @@ function HomeScreen({ navigation }: any) {
           />
         }
       >
-        <View style={styles.userGreetingContainer}>
-          <TouchableOpacity 
-            style={styles.userAvatarContainer}
-            onPress={() => navigation.navigate('UserProfile')}
-          >
-            {userProfile.avatar ? (
-              <Image 
-                source={{ uri: userProfile.avatar }} 
-                style={styles.userAvatar}
-                defaultSource={require('../../../assets/images/default-avatar.png')}
+        <WeatherBanner themeMode={themeMode} />
+
+        {/* Map Section - Full height to bottom navigation */}
+        <View style={styles.mapContainer}>
+          <NativeMapView
+            ref={mapRef}
+            currentLocation={tripTracking.lastLocation}
+            routeCoordinates={tripTracking.isTracking ? tripTracking.path.map(p => ({
+              latitude: p.latitude,
+              longitude: p.longitude
+            })) : []}
+            heatMapSegments={heatMapSegments}
+            showUserLocation={true}
+            followUserLocation={isFollowing}
+            height={Dimensions.get('window').height * 0.65} // Leave space for weather banner and bottom nav
+            scrollEnabled={false}
+            zoomEnabled={false}
+            rotateEnabled={false}
+            pitchEnabled={false}
+          />
+
+          {/* Map Control Buttons - Right Side */}
+          <View style={styles.mapControlsContainer}>
+            {/* Center/Follow Toggle */}
+            <TouchableOpacity
+              style={[
+                styles.mapControlBtn,
+                { backgroundColor: isFollowing ? screenColors.primary : screenColors.card }
+              ]}
+              onPress={() => setIsFollowing(!isFollowing)}
+            >
+              <Ionicons
+                name="locate"
+                size={20}
+                color={isFollowing ? 'white' : screenColors.text}
               />
-            ) : (
-              <View style={[styles.userAvatarFallback, { backgroundColor: screenColors.primary }]}>
-                <Text style={styles.userAvatarInitials}>
-                  {userProfile.name.charAt(0).toUpperCase()}
+            </TouchableOpacity>
+
+            {/* Zoom In */}
+            <TouchableOpacity
+              style={[styles.mapControlBtn, { backgroundColor: screenColors.card }]}
+              onPress={handleZoomIn}
+            >
+              <Ionicons name="add" size={20} color={screenColors.text} />
+            </TouchableOpacity>
+
+            {/* Zoom Out */}
+            <TouchableOpacity
+              style={[styles.mapControlBtn, { backgroundColor: screenColors.card }]}
+              onPress={handleZoomOut}
+            >
+              <Ionicons name="remove" size={20} color={screenColors.text} />
+            </TouchableOpacity>
+
+            {/* Speed Indicator */}
+            {tripTracking.isTracking && (
+              <View style={[styles.speedCircle, {
+                backgroundColor: screenColors.card,
+                borderColor: getSpeedColor(tripTracking.currentSpeed || 0)
+              }]}>
+                {/* Speed Clouds/Decorations */}
+                <View style={styles.speedClouds}>
+                  <View style={[styles.speedCloud, styles.cloud1]} />
+                  <View style={[styles.speedCloud, styles.cloud2]} />
+                  <View style={[styles.speedCloud, styles.cloud3]} />
+                </View>
+
+                <Text style={[styles.speedValue, { color: getSpeedColor(tripTracking.currentSpeed || 0) }]}>
+                  {Math.round(tripTracking.currentSpeed || 0)}
                 </Text>
+                <Text style={[styles.speedUnit, { color: screenColors.textSecondary }]}>
+                  km/h
+                </Text>
+
+                {/* Speed Limit Badge */}
+                <View style={[styles.speedLimitBadge, {
+                  backgroundColor: tripTracking.currentSpeed > 50 ? screenColors.danger : screenColors.success
+                }]}>
+                  <Text style={styles.speedLimitBadgeText}>
+                    50{/* This should come from speed limit service */}
+                  </Text>
+                </View>
               </View>
             )}
-          </TouchableOpacity>
-          <View style={styles.userTextContainer}>
-            <Text style={[styles.greetingText, { color: screenColors.textSecondary }]}>
-              {getGreeting()}, {userProfile.name}
-            </Text>
-            <Text style={[styles.positionText, { color: screenColors.textSecondary }]}>
-              {userProfile.position} • {userProfile.department}
-            </Text>
-          </View>
-          <Image 
-            source={require('../../../assets/logoMDF.png')} 
-            style={styles.clientLogo}
-          />
-        </View>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('active_trip', 'Active Trip')}</Text>
-          <View style={[styles.card, { alignItems: 'center', paddingVertical: 30 }]}>
-            <Ionicons name="map-outline" size={48} color={screenColors.textSecondary} />
-            <Text style={styles.emptyStateText}>{t('no_active_trip', 'No active trip')}</Text>
-            <Text style={styles.emptyStateSubtext}>{t('start_trip_message', 'Start a new trip to see details here.')}</Text>
-            <TouchableOpacity 
-              style={[styles.actionButton, { backgroundColor: screenColors.primary, marginTop: 20, paddingHorizontal:30 }]}
-              onPress={handleStartNewTrip}
+
+            {/* Start Trip Button - Inside container, spaced below minus */}
+            <View style={{ height: 52 }} /> {/* One button height (44) + gap (8) */}
+            <TouchableOpacity
+              style={[styles.mapControlBtn, { backgroundColor: screenColors.primary }]}
+              onPress={handleStartNewTripFlow}
             >
-              <Text style={styles.actionButtonText}>{t('start_new_trip', 'Start New Trip')}</Text>
+              <Ionicons name="briefcase-outline" size={20} color="white" />
             </TouchableOpacity>
           </View>
         </View>
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('upcoming_reminders', 'Upcoming Reminders')}</Text>
-          {upcomingReminders.length > 0 ? (
-            upcomingReminders.map((reminder) => (
-              <View key={reminder.id} style={[styles.card, styles.listItem]}>
-                <Ionicons name="alarm-outline" size={24} color={getStatusColor(reminder.status_display)} style={styles.listItemIcon} />
-                <View style={styles.listItemContent}>
-                  <Text style={styles.listItemTitle}>{reminder.title}</Text>
-                  <Text style={styles.listItemSubtitle}>Due: {formatDate(reminder.due_date)} {reminder.time || ''} - Vehicle: {reminder.vehicle_name || 'N/A'}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(reminder.status_display) }]}>
-                  <Text style={styles.statusText}>{reminder.status_display || t('upcoming', 'Upcoming')}</Text>
-                </View>
-              </View>
-            ))
-          ) : (
-            <View style={[styles.card, { backgroundColor: screenColors.card, alignItems: 'center', paddingVertical: 20 }]}>
-              <Ionicons name="checkmark-done-outline" size={32} color={screenColors.textSecondary} />
-              <Text style={[styles.emptyStateText, { marginTop: 8 }]}>{t('no_upcoming_reminders', 'No upcoming reminders')}</Text>
-            </View>
-          )}
-        </View>
-        <View style={[styles.section, { marginBottom: 20 }]}>
-          <Text style={styles.sectionTitle}>{t('upcoming_reservations', 'Upcoming Reservations')}</Text>
-          {upcomingReservations.length > 0 ? (
-            upcomingReservations.map((reservation) => (
-              <View key={reservation.id} style={[styles.card, styles.listItem]}>
-                <Ionicons name="calendar-outline" size={24} color={getStatusColor(reservation.status_display)} style={styles.listItemIcon} />
-                <View style={styles.listItemContent}>
-                  <Text style={styles.listItemTitle}>{reservation.route_name}</Text>
-                  <Text style={styles.listItemSubtitle}>Date: {formatDate(reservation.start_date)} {reservation.reservation_time || ''} - Vehicle: {reservation.vehicle_name}</Text>
-                </View>
-                <View style={[styles.statusBadge, { backgroundColor: getStatusColor(reservation.status_display) }]}>
-                  <Text style={styles.statusText}>{reservation.status_display || t('scheduled', 'Scheduled')}</Text>
-                </View>
-              </View>
-            ))
-          ) : (
-            <View style={[styles.card, { backgroundColor: screenColors.card, alignItems: 'center', paddingVertical: 20 }]}>
-              <Ionicons name="calendar-outline" size={32} color={screenColors.textSecondary} />
-              <Text style={[styles.emptyStateText, { marginTop: 8 }]}>{t('no_upcoming_reservations', 'No upcoming reservations')}</Text>
-            </View>
-          )}
-        </View>
+
+
       </ScrollView>
+
+      {/* Trip Control Buttons - Bottom of screen */}
+      <View style={styles.tripControlContainer}>
+        {!tripTracking.activeTravelOrder ? (
+          // No active travel order - show briefcase start button
+          <TouchableOpacity
+            style={[styles.tripControlButtonSmall, { backgroundColor: screenColors.primary }]}
+            onPress={handleStartNewTripFlow}
+          >
+            <Ionicons name="briefcase-outline" size={20} color="white" />
+          </TouchableOpacity>
+        ) : tripTracking.isTracking ? (
+          // Currently tracking - show STOP circle button
+          <TouchableOpacity
+            style={[styles.tripControlStopCircle, { borderColor: '#FF3B30' }]}
+            onPress={handleEndTrip}
+            disabled={tripTracking.isEnding}
+          >
+            <View style={[styles.stopSquare, { backgroundColor: '#FF3B30' }]}>
+              <Ionicons name="stop" size={16} color="white" />
+            </View>
+          </TouchableOpacity>
+        ) : (
+          // Travel order active but not tracking - show small play button
+          <TouchableOpacity
+            style={[styles.tripControlButtonSmall, { backgroundColor: screenColors.primary }]}
+            onPress={handleStartNewTripFlow}
+          >
+            <Ionicons name="play" size={20} color="white" />
+          </TouchableOpacity>
+        )}
+      </View>
+
+      {/* Modals */}
+      <TripModal
+        visible={showTripModal}
+        onClose={() => setShowTripModal(false)}
+        onVehicleSelected={handleVehicleSelected}
+      />
+
+      <TravelOrderModal
+        visible={showTravelOrderModal}
+        onClose={() => setShowTravelOrderModal(false)}
+        onRouteSelected={handleRouteSelected}
+      />
+
+      <PurposeModal
+        visible={showPurposeModal}
+        onClose={() => setShowPurposeModal(false)}
+        onSelectPurpose={handlePurposeSelected}
+      />
     </SafeAreaView>
   );
 }
@@ -590,6 +855,23 @@ const getStyles = (screenColors: any) => StyleSheet.create({
   headerIcon: {
     marginLeft: 15,
     position: 'relative',
+  },
+  headerAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+  },
+  headerAvatarFallback: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  headerAvatarInitials: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: Colors.WHITE,
   },
   notificationBadge: {
     position: 'absolute',
@@ -776,6 +1058,184 @@ const getStyles = (screenColors: any) => StyleSheet.create({
     color: screenColors.textSecondary,
     marginTop: 2,
   },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  seeAllText: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  tripItem: {
+    padding: 16,
+    marginBottom: 8,
+    borderRadius: 8,
+  },
+  tripItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  tripIcon: {
+    marginRight: 12,
+  },
+  tripItemContent: {
+    flex: 1,
+  },
+  tripItemTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  tripItemSubtitle: {
+    fontSize: 14,
+    marginTop: 2,
+  },
+  tripItemRight: {
+    alignItems: 'flex-end',
+  },
+  tripItemStatus: {
+    fontSize: 12,
+    fontWeight: '500',
+    textTransform: 'uppercase',
+  },
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    gap: 8,
+  },
+  primaryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  mapContainer: {
+    flex: 1,
+    position: 'relative',
+  },
+  mapSection: {
+    borderRadius: 12,
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
+    elevation: 5,
+  },
+  mapControlsContainer: {
+    position: 'absolute',
+    right: 20,
+    top: 200, // Start from top, below weather banner
+    zIndex: 1000,
+  },
+  mapControlBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+  },
+  speedCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2.5,
+    marginBottom: 8,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+  },
+  speedValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  speedUnit: {
+    fontSize: 8,
+    marginTop: -3,
+    fontWeight: 'bold',
+  },
+  speedLimitBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    backgroundColor: '#FF0000', // Danger red
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: 'white',
+  },
+  speedLimitBadgeText: {
+    color: 'white',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  speedClouds: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  speedCloud: {
+    position: 'absolute',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 10,
+  },
+  cloud1: {
+    width: 15,
+    height: 8,
+    top: 8,
+    left: 8,
+  },
+  cloud2: {
+    width: 12,
+    height: 6,
+    top: 35,
+    right: 12,
+  },
+  cloud3: {
+    width: 10,
+    height: 5,
+    bottom: 8,
+    left: 15,
+  },
+  primaryButtonSmall: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  primaryButtonTextSmall: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
   viewAllButton: {
     alignSelf: 'flex-start',
     marginTop: 5,
@@ -803,6 +1263,86 @@ const getStyles = (screenColors: any) => StyleSheet.create({
     flex: 1,
     marginHorizontal: 15,
     marginBottom: 10,
+  },
+  tripControlContainer: {
+    position: 'absolute',
+    bottom: 100, // Above tab navigation
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+  },
+  multiTripControlContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '90%',
+    maxWidth: 400,
+    backgroundColor: 'transparent',
+    gap: 12,
+  },
+  tripControlButton: {
+    paddingVertical: 16,
+    paddingHorizontal: 32,
+    borderRadius: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    minWidth: 200,
+    maxWidth: 300,
+  },
+  tripControlButtonSmall: {
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    minWidth: 120,
+    flex: 1,
+  },
+  tripControlButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+    marginTop: 4,
+  },
+  tripControlButtonTextSmall: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 14,
+    marginTop: 2,
+  },
+  tripControlStopCircle: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    borderWidth: 3,
+    backgroundColor: 'white',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  stopSquare: {
+    width: 24,
+    height: 24,
+    borderRadius: 4,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

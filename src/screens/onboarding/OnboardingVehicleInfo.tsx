@@ -21,6 +21,7 @@ const OnboardingVehicleInfo: React.FC<OnboardingVehicleInfoProps> = ({
   const [vehicleColor, setVehicleColor] = useState(userData.vehicleColor || '');
   const [vehicleLicensePlate, setVehicleLicensePlate] = useState(userData.vehicleLicensePlate || '');
   const [vehicleFuelType, setVehicleFuelType] = useState(userData.vehicleFuelType || '');
+  const [currentMileage, setCurrentMileage] = useState(userData.currentMileage || '');
 
   const handleSubmit = () => {
     onSave({
@@ -31,6 +32,7 @@ const OnboardingVehicleInfo: React.FC<OnboardingVehicleInfoProps> = ({
       vehicleColor: vehicleColor.trim(),
       vehicleLicensePlate: vehicleLicensePlate.trim(),
       vehicleFuelType: vehicleFuelType.trim(),
+      currentMileage: currentMileage.trim(),
     });
     onNext();
   };
@@ -85,6 +87,18 @@ const OnboardingVehicleInfo: React.FC<OnboardingVehicleInfoProps> = ({
                   value={vehicleYear}
                   onChangeText={setVehicleYear}
                   placeholder="e.g., 2020"
+                  placeholderTextColor="#9ca3af"
+                  keyboardType="numeric"
+                />
+              </View>
+
+              <View style={styles.inputContainer}>
+                <Text style={styles.label}>Current Mileage (km)</Text>
+                <TextInput
+                  style={styles.input}
+                  value={currentMileage}
+                  onChangeText={setCurrentMileage}
+                  placeholder="e.g., 50000"
                   placeholderTextColor="#9ca3af"
                   keyboardType="numeric"
                 />

@@ -18,6 +18,9 @@ import Colors from '../../constants/Colors';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../store/rootReducer';
 
+// Auth
+import { useAuth } from '../../contexts/AuthContext';
+
 // Navigation
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -46,9 +49,10 @@ export default function TripsScreen() {
   const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
   const { t } = useTranslation();
   const themeMode = useSelector((state: RootState) => state.theme.mode);
+  const { user } = useAuth();
   
-  // Fetch trips data
-  const { data: tripsData, isLoading: isLoadingTrips, error: tripsError, refetch } = useGetTripsQuery();
+  // Fetch trips data - filter by current user
+  const { data: tripsData, isLoading: isLoadingTrips, error: tripsError, refetch } = useGetTripsQuery({ userId: user?.user_id });
 
   const screenColors = themeMode === 'dark' ? {
     background: Colors.DARK.background,

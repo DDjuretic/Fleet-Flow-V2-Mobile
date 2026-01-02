@@ -28,6 +28,9 @@ export type RootStackParamList = {
   EditReservation: { reservationId: string };
   PendingReservations: undefined;
   AdminRoleManagement: undefined;
+  DepartmentManagement: undefined;
+  OSRMSettings: undefined;
+  SpeedLimitSettings: undefined;
   AdminPanel: undefined;
   POIManagement: undefined;
   RouteManagement: undefined;
@@ -103,6 +106,10 @@ export type RootStackParamList = {
   AddReminder: undefined;
   EditReminder: { reminderId: string };
   EditUser: { user: any };
+
+  // Settings screens
+  OSRMSettings: undefined;
+  SpeedLimitSettings: undefined;
 
   // Trip stack
   TripList: undefined;

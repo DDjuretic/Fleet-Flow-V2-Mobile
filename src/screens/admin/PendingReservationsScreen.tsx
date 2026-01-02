@@ -68,9 +68,9 @@ export default function PendingReservationsScreen({ navigation }: any) {
   }, [user]);
 
   const checkPermissions = async () => {
-    if (!user?.id) return;
+    if (!(user as any)?.id) return;
     
-    const hasPermission = await roleService.canApproveReservations(user.id);
+    const hasPermission = await roleService.canApproveReservations((user as any).id);
     setCanApprove(hasPermission);
     
     if (!hasPermission) {
@@ -96,12 +96,12 @@ export default function PendingReservationsScreen({ navigation }: any) {
   };
 
   const confirmApproval = async () => {
-    if (!selectedReservation || !user?.id) return;
+    if (!selectedReservation || !(user as any)?.id) return;
 
     try {
       await approveReservation({
         reservationId: selectedReservation.reservation_id,
-        approvedByUserId: user.id,
+        approvedByUserId: (user as any).id,
         approvalNotes: approvalNotes.trim() || undefined,
         actualVehicleId: selectedVehicleId || undefined
       }).unwrap();
@@ -111,7 +111,7 @@ export default function PendingReservationsScreen({ navigation }: any) {
         ? `${selectedReservation.vehicles.make} ${selectedReservation.vehicles.model}`
         : selectedReservation.vehicle_types?.name || 'vehicle';
       
-      const approverName = `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim() || 'Fleet Manager';
+      const approverName = `${(user as any).user_metadata?.first_name || ''} ${(user as any).user_metadata?.last_name || ''}`.trim() || 'Fleet Manager';
       
       await notificationService.sendReservationApprovedNotification(
         selectedReservation.user_id,
@@ -142,7 +142,7 @@ export default function PendingReservationsScreen({ navigation }: any) {
   };
 
   const confirmRejection = async () => {
-    if (!selectedReservation || !user?.id) return;
+    if (!selectedReservation || !(user as any)?.id) return;
 
     if (!rejectionReason.trim()) {
       Alert.alert(
@@ -155,7 +155,7 @@ export default function PendingReservationsScreen({ navigation }: any) {
     try {
       await rejectReservation({
         reservationId: selectedReservation.reservation_id,
-        approvedByUserId: user.id,
+        approvedByUserId: (user as any).id,
         rejectionReason: rejectionReason.trim()
       }).unwrap();
 
@@ -164,7 +164,7 @@ export default function PendingReservationsScreen({ navigation }: any) {
         ? `${selectedReservation.vehicles.make} ${selectedReservation.vehicles.model}`
         : selectedReservation.vehicle_types?.name || 'vehicle';
       
-      const rejectorName = `${user.user_metadata?.first_name || ''} ${user.user_metadata?.last_name || ''}`.trim() || 'Fleet Manager';
+      const rejectorName = `${(user as any).user_metadata?.first_name || ''} ${(user as any).user_metadata?.last_name || ''}`.trim() || 'Fleet Manager';
       
       await notificationService.sendReservationRejectedNotification(
         selectedReservation.user_id,
