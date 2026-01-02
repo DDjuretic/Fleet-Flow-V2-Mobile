@@ -27,11 +27,19 @@ Always keep the context of these files in mind:
 - **Testing**: Prioritize testability. If a feature is critical, suggest a Maestro or Jest test.
 - **Clean Code**: Follow Atomic Design for components and keep services modular.
 
-## 5. Workflow
+## 5. Documentation & Change Tracking (MANDATORY)
+- **Update Documentation**: After every major feature implementation, update relevant `.md` files in `docs/` folder
+- **Change Log**: Maintain detailed commit messages with feature descriptions and technical details
+- **Version Tracking**: Update `CHANGELOG.md` with new features, breaking changes, and fixes
+- **API Documentation**: Document all new services, components, and database changes
+- **README Updates**: Keep setup guides and architecture docs current
+
+## 6. Workflow
 1. **Explore**: Search and read before you act.
 2. **Plan**: Describe the solution in Serbian before writing code.
 3. **Execute**: Write code in English, following micro-steps.
 4. **Verify**: Check for linter errors and type consistency.
+5. **Document**: Update docs and change logs after successful implementation.
 
 "Elegance is achieved not when there is nothing left to add, but when there is nothing left to take away."
 
