@@ -1,56 +1,38 @@
+import { useEffect, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { AlertTriangle, Thermometer, Fuel, Wrench, Zap } from 'lucide-react'
+import { AlertTriangle, Thermometer, Fuel, Wrench, Zap, RefreshCw } from 'lucide-react'
 
-// Mock alerts data
-const alerts = [
-  {
-    id: '1',
-    type: 'temperature',
-    severity: 'high',
-    title: 'Engine Overheat',
-    message: 'Vehicle V001 engine temperature at 110°C',
-    vehicle: 'V001',
-    timestamp: new Date(Date.now() - 5 * 60 * 1000), // 5 minutes ago
-    icon: Thermometer,
-  },
-  {
-    id: '2',
-    type: 'fuel',
-    severity: 'medium',
-    title: 'Low Fuel Level',
-    message: 'Vehicle V003 fuel level below 20%',
-    vehicle: 'V003',
-    timestamp: new Date(Date.now() - 15 * 60 * 1000), // 15 minutes ago
-    icon: Fuel,
-  },
-  {
-    id: '3',
-    type: 'maintenance',
-    severity: 'low',
-    title: 'Maintenance Due',
-    message: 'Vehicle V002 due for oil change',
-    vehicle: 'V002',
-    timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000), // 2 hours ago
-    icon: Wrench,
-  },
-  {
-    id: '4',
-    type: 'battery',
-    severity: 'medium',
-    title: 'Low Battery',
-    message: 'Vehicle V004 battery voltage at 11.8V',
-    vehicle: 'V004',
-    timestamp: new Date(Date.now() - 30 * 60 * 1000), // 30 minutes ago
-    icon: Zap,
-  },
-]
+interface AlertData {
+  id: string
+  type: 'error' | 'warning' | 'info'
+  severity: 'high' | 'medium' | 'low' | 'critical'
+  title: string
+  message: string
+  vehicle: string
+  timestamp: string
+  resolved: boolean
+}
+
+const getIconForAlert = (type: string, severity: string) => {
+  if (severity === 'high' || type === 'error') return Thermometer
+  if (type === 'fuel') return Fuel
+  if (type === 'maintenance') return Wrench
+  if (type === 'battery') return Zap
+  return AlertTriangle
+}
 
 export function AlertsPanel() {
+  const [alerts, setAlerts] = useState<AlertData[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [refreshing, setRefreshing] = useState(false)
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case 'high':
+      case 'critical':
         return 'destructive'
       case 'medium':
         return 'default'
@@ -61,9 +43,10 @@ export function AlertsPanel() {
     }
   }
 
-  const formatTimeAgo = (timestamp: Date) => {
+  const formatTimeAgo = (timestamp: string) => {
     const now = new Date()
-    const diffMs = now.getTime() - timestamp.getTime()
+    const alertTime = new Date(timestamp)
+    const diffMs = now.getTime() - alertTime.getTime()
     const diffMins = Math.floor(diffMs / (1000 * 60))
 
     if (diffMins < 60) {
@@ -74,6 +57,37 @@ export function AlertsPanel() {
     }
   }
 
+  const fetchAlerts = async () => {
+    try {
+      const response = await fetch('/api/dashboard/alerts')
+      if (!response.ok) {
+        throw new Error('Failed to fetch alerts')
+      }
+      const data = await response.json()
+      setAlerts(data.alerts || [])
+    } catch (err) {
+      console.error('Error fetching alerts:', err)
+      setError('Failed to load alerts')
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchAlerts()
+
+    // Refresh every 60 seconds
+    const interval = setInterval(fetchAlerts, 60000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    await fetchAlerts()
+  }
+
   return (
     <Card className="fleetflow-card">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
@@ -81,7 +95,18 @@ export function AlertsPanel() {
           <AlertTriangle className="h-5 w-5 text-red-500" />
           Active Alerts
         </CardTitle>
-        <Badge variant="destructive">{alerts.length}</Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="destructive">{alerts.length}</Badge>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleRefresh}
+            disabled={refreshing}
+            className="h-6 w-6"
+          >
+            <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {alerts.length === 0 ? (
@@ -91,18 +116,18 @@ export function AlertsPanel() {
           </div>
         ) : (
           alerts.map((alert) => {
-            const Icon = alert.icon
+            const Icon = getIconForAlert(alert.type, alert.severity)
             return (
               <div
                 key={alert.id}
                 className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-accent/50 transition-colors"
               >
                 <div className={`p-1 rounded-full ${
-                  alert.severity === 'high' ? 'bg-red-100' :
+                  alert.severity === 'high' || alert.severity === 'critical' ? 'bg-red-100' :
                   alert.severity === 'medium' ? 'bg-yellow-100' : 'bg-blue-100'
                 }`}>
                   <Icon className={`h-4 w-4 ${
-                    alert.severity === 'high' ? 'text-red-600' :
+                    alert.severity === 'high' || alert.severity === 'critical' ? 'text-red-600' :
                     alert.severity === 'medium' ? 'text-yellow-600' : 'text-blue-600'
                   }`} />
                 </div>
@@ -115,7 +140,7 @@ export function AlertsPanel() {
                   </div>
                   <p className="text-sm text-muted-foreground">{alert.message}</p>
                   <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Vehicle {alert.vehicle}</span>
+                    <span>{alert.vehicle}</span>
                     <span>{formatTimeAgo(alert.timestamp)}</span>
                   </div>
                 </div>
