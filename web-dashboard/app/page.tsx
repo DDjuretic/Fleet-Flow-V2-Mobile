@@ -1,4 +1,6 @@
 import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
+import { createServerSupabaseClient } from '@/lib/supabase'
 import { DashboardShell } from '@/components/layout/dashboard-shell'
 import { DashboardHeader } from '@/components/layout/dashboard-header'
 import { StatsCards } from '@/components/dashboard/stats-cards'
@@ -6,7 +8,25 @@ import { FleetMap } from '@/components/dashboard/fleet-map'
 import { RecentActivity } from '@/components/dashboard/recent-activity'
 import { AlertsPanel } from '@/components/dashboard/alerts-panel'
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  // Server-side auth check
+  const supabase = await createServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  if (!user) {
+    redirect('/auth/login')
+  }
+
+  // Check onboarding status
+  const { data: userProfile } = await supabase
+    .from('users')
+    .select('onboarding_status')
+    .eq('user_id', user.id)
+    .single()
+
+  if (userProfile?.onboarding_status === 'pending') {
+    redirect('/onboarding')
+  }
   return (
     <DashboardShell>
       <DashboardHeader
